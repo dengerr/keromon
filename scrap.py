@@ -1,17 +1,24 @@
-import datetime
-import requests
+"""
+send email with today most rating article from habr
+
+create file email.ini with text:
+[smtp]
+smtp_host = smtp.gmail.com
+smtp_user = example@gmail.com
+smtp_password = Qwer1243!
+to = user@example.com, uesr2@example.com
+"""
+
+from configparser import ConfigParser
 from collections import namedtuple
-import smtplib
+import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import os
+import requests
+import smtplib
 
 from bs4 import BeautifulSoup
-
-smtp_host = 'smtp.gmail.com'
-smtp_user = ''
-smtp_password = ''
-sent_from = smtp_user
-to = ['']
 
 
 def get_habr_articles():
@@ -30,17 +37,34 @@ BODY_TEMPLATE = """\
 """
 
 def send_email(subject, body):
+    # get credentials from config
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(base_path, "email.ini")
+    if os.path.exists(config_path):
+        cfg = ConfigParser()
+        cfg.read(config_path)
+    else:
+        print("Config not found! Exiting!")
+        sys.exit(1)
+
+    smtp_host = cfg.get("smtp", "host")
+    smtp_user = cfg.get("smtp", "user")
+    smtp_password = cfg.get("smtp", "password")
+    smtp_to = cfg.get("smtp", "to")
+
+    # make emai
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = sent_from
-    msg["To"] = ", ".join(to)
+    msg["From"] = smtp_user
+    msg["To"] = smtp_to
     part1 = MIMEText(body, "plain", "utf-8")
     msg.attach(part1)
 
+    # send email
     server = smtplib.SMTP_SSL(smtp_host, 465)
     server.ehlo()
     server.login(smtp_user, smtp_password)
-    server.sendmail(sent_from, to, msg.as_string())
+    server.sendmail(smtp_user, smtp_to, msg.as_string())
     server.close()
 
 

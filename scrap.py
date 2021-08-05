@@ -22,14 +22,15 @@ from bs4 import BeautifulSoup
 
 
 def get_habr_articles():
-    url = 'https://habr.com/ru/top/'
+    url = 'https://habr.com/ru/top/daily/'
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'lxml')
-    articles = soup.find_all('article', class_='post')
+    articles = soup.find_all('article', class_='tm-articles-list__item')
     for article in articles:
-        link = article.find('a', class_='post__title_link')
-        voting = article.find('span', class_='post-stats__result-counter')
-        yield dict(text=link.text, voting=voting.text, url=link.get('href'))
+        link = article.find('a', class_='tm-article-snippet__title-link')
+        voting = article.find('span', class_='tm-votes-meter__value')
+        url = 'https://habr.com' + link.get('href')
+        yield dict(text=link.text, voting=voting.text, url=url)
 
 BODY_TEMPLATE = """\
 {voting} {text}
@@ -76,4 +77,15 @@ def send_articles():
     body = "\n".join(texts)
     send_email(subject, body)
 
-send_articles()
+
+def show_articles():
+    articles = get_habr_articles()
+    current = datetime.datetime.now()
+    texts = [BODY_TEMPLATE.format(**article) for article in articles]
+    body = "\n".join(texts)
+    print(body)
+
+
+if __name__ == '__main__':
+    #show_articles()
+    send_articles()

@@ -28,6 +28,8 @@ def get_habr_articles():
     articles = soup.find_all('article', class_='tm-articles-list__item')
     for article in articles:
         link = article.find('a', class_='tm-article-snippet__title-link')
+        if not link:
+            continue
         voting = article.find('span', class_='tm-votes-meter__value')
         url = 'https://habr.com' + link.get('href')
         yield dict(text=link.text, voting=voting.text, url=url)

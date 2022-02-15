@@ -9,6 +9,7 @@ smtp_password = Qwer1243!
 to = user@example.com, uesr2@example.com
 """
 
+import sys
 from configparser import ConfigParser
 from collections import namedtuple
 import datetime
@@ -21,8 +22,7 @@ import smtplib
 from bs4 import BeautifulSoup
 
 
-def get_habr_articles():
-    url = 'https://habr.com/ru/top/daily/'
+def get_habr_articles(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'lxml')
     articles = soup.find_all('article', class_='tm-articles-list__item')
@@ -70,23 +70,29 @@ def send_email(subject, body):
     server.close()
 
 
-def send_articles():
-    articles = get_habr_articles()
-    current = datetime.datetime.now()
-    subject = 'New HABR articles {}'.format(current.strftime('%Y-%m-%d'))
-    texts = [BODY_TEMPLATE.format(**article) for article in articles]
-    body = "\n".join(texts)
-    send_email(subject, body)
+def get_texts(url):
+    articles = get_habr_articles(url)
+    return [BODY_TEMPLATE.format(**article) for article in articles]
 
 
-def show_articles():
-    articles = get_habr_articles()
-    current = datetime.datetime.now()
-    texts = [BODY_TEMPLATE.format(**article) for article in articles]
+def main():
+    texts = []
+    if 'weekly' in sys.argv:
+        urls = ['https://habr.com/ru/top/weekly/',
+                'https://habr.com/ru/top/weekly/page2/',
+                'https://habr.com/ru/top/weekly/page3/']
+    else:
+        urls = ['https://habr.com/ru/top/daily/']
+    for url in urls:
+        texts += get_texts(url)
     body = "\n".join(texts)
-    print(body)
+    if 'print' in sys.argv:
+        print(body)
+    else:
+        current = datetime.datetime.now()
+        subject = 'New HABR articles {}'.format(current.strftime('%Y-%m-%d'))
+        send_email(subject, body)
 
 
 if __name__ == '__main__':
-    #show_articles()
-    send_articles()
+    main()

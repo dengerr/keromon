@@ -71,24 +71,29 @@ def send_email(subject, body):
 
 
 def main():
+    current = datetime.datetime.now()
+    current_date = current.strftime('%Y-%m-%d')
+
     texts = []
     if 'weekly' in sys.argv:
+        subject = f'New weekly HABR articles {current_date}'
         urls = ['https://habr.com/ru/top/weekly/',
                 'https://habr.com/ru/top/weekly/page2/',
                 'https://habr.com/ru/top/weekly/page3/']
     else:
+        subject = f'New HABR articles {current_date}'
         urls = ['https://habr.com/ru/top/daily/']
 
-    for url in urls:
-        articles = get_habr_articles(url)
-        texts += [BODY_TEMPLATE.format(**article) for article in articles]
+    texts += [BODY_TEMPLATE.format(**article)
+              for url in urls
+              for article in get_habr_articles(url)
+              ]
     body = "\n".join(texts)
 
     if 'print' in sys.argv:
+        print(subject)
         print(body)
     else:
-        current = datetime.datetime.now()
-        subject = 'New HABR articles {}'.format(current.strftime('%Y-%m-%d'))
         send_email(subject, body)
 
 

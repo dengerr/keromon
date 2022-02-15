@@ -24,19 +24,21 @@ from bs4 import BeautifulSoup
 
 def get_habr_articles(url):
     response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'lxml')
-    articles = soup.find_all('article', class_='tm-articles-list__item')
+    soup = BeautifulSoup(response.text, "lxml")
+    articles = soup.find_all("article", class_="tm-articles-list__item")
     for article in articles:
-        link = article.find('a', class_='tm-article-snippet__title-link')
+        link = article.find("a", class_="tm-article-snippet__title-link")
         if not link:
             continue
-        voting = article.find('span', class_='tm-votes-meter__value')
-        url = 'https://habr.com' + link.get('href')
+        voting = article.find("span", class_="tm-votes-meter__value")
+        url = "https://habr.com" + link.get("href")
         yield dict(text=link.text, voting=voting.text, url=url)
+
 
 BODY_TEMPLATE = """\
 - [ ] {voting} {text} {url}\
 """
+
 
 def send_email(subject, body):
     # get credentials from config
@@ -72,30 +74,33 @@ def send_email(subject, body):
 
 def main():
     current = datetime.datetime.now()
-    current_date = current.strftime('%Y-%m-%d')
+    current_date = current.strftime("%Y-%m-%d")
 
     texts = []
-    if 'weekly' in sys.argv:
-        subject = f'New weekly HABR articles {current_date}'
-        urls = ['https://habr.com/ru/top/weekly/',
-                'https://habr.com/ru/top/weekly/page2/',
-                'https://habr.com/ru/top/weekly/page3/']
+    if "weekly" in sys.argv:
+        subject = f"New weekly HABR articles {current_date}"
+        urls = [
+            "https://habr.com/ru/top/weekly/",
+            "https://habr.com/ru/top/weekly/page2/",
+            "https://habr.com/ru/top/weekly/page3/",
+        ]
     else:
-        subject = f'New HABR articles {current_date}'
-        urls = ['https://habr.com/ru/top/daily/']
+        subject = f"New HABR articles {current_date}"
+        urls = ["https://habr.com/ru/top/daily/"]
 
-    texts += [BODY_TEMPLATE.format(**article)
-              for url in urls
-              for article in get_habr_articles(url)
-              ]
+    texts += [
+        BODY_TEMPLATE.format(**article)
+        for url in urls
+        for article in get_habr_articles(url)
+    ]
     body = "\n".join(texts)
 
-    if 'print' in sys.argv:
+    if "print" in sys.argv:
         print(subject)
         print(body)
     else:
         send_email(subject, body)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -70,11 +70,6 @@ def send_email(subject, body):
     server.close()
 
 
-def get_texts(url):
-    articles = get_habr_articles(url)
-    return [BODY_TEMPLATE.format(**article) for article in articles]
-
-
 def main():
     texts = []
     if 'weekly' in sys.argv:
@@ -83,9 +78,12 @@ def main():
                 'https://habr.com/ru/top/weekly/page3/']
     else:
         urls = ['https://habr.com/ru/top/daily/']
+
     for url in urls:
-        texts += get_texts(url)
+        articles = get_habr_articles(url)
+        texts += [BODY_TEMPLATE.format(**article) for article in articles]
     body = "\n".join(texts)
+
     if 'print' in sys.argv:
         print(body)
     else:

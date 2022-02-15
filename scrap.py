@@ -35,7 +35,7 @@ def get_habr_articles():
         yield dict(text=link.text, voting=voting.text, url=url)
 
 BODY_TEMPLATE = """\
-- [ ] {voting} {text} {url}
+- [ ] {voting} {text} {url}\
 """
 
 def send_email(subject, body):

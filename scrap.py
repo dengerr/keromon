@@ -1,25 +1,23 @@
 """
 send email with today most rating article from habr
 
-create file email.ini with text:
-[smtp]
-smtp_host = smtp.gmail.com
-smtp_user = example@gmail.com
-smtp_password = Qwer1243!
-to = user@example.com, uesr2@example.com
+create file email.ini from template email-example.ini
 """
 
+import datetime
+import os
+import smtplib
 import sys
 from configparser import ConfigParser
-from collections import namedtuple
-import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import os
-import requests
-import smtplib
 
+import requests
 from bs4 import BeautifulSoup
+
+BODY_TEMPLATE = """\
+- [ ] {voting} {text} {url}\
+"""
 
 
 def get_habr_articles(url):
@@ -33,11 +31,6 @@ def get_habr_articles(url):
         voting = article.find("span", class_="tm-votes-meter__value")
         url = "https://habr.com" + link.get("href")
         yield dict(text=link.text, voting=voting.text, url=url)
-
-
-BODY_TEMPLATE = """\
-- [ ] {voting} {text} {url}\
-"""
 
 
 def send_email(subject, body):
@@ -56,7 +49,7 @@ def send_email(subject, body):
     smtp_password = cfg.get("smtp", "password")
     smtp_to = cfg.get("smtp", "to")
 
-    # make emai
+    # make email
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = smtp_user

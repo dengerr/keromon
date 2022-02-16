@@ -16,7 +16,7 @@ import requests
 from bs4 import BeautifulSoup
 
 BODY_TEMPLATE = """\
-- [ ] {voting} {text} {url}\
+- [ ] {voting} ({text})[{url}]\
 """
 
 

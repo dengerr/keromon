@@ -1,3 +1,4 @@
+#!/bin/python3
 """
 get text (article) from a html text and convert to markdown
 """

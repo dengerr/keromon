@@ -1,3 +1,4 @@
+#!/bin/python3
 from bs4 import BeautifulSoup, NavigableString, Comment, Doctype
 import re
 import six

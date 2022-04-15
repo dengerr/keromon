@@ -9,8 +9,7 @@ import os
 import smtplib
 import sys
 from configparser import ConfigParser
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import email.message
 
 import requests
 from bs4 import BeautifulSoup
@@ -50,18 +49,18 @@ def send_email(subject, body):
     smtp_to = cfg.get("smtp", "to")
 
     # make email
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
+    msg = email.message.Message()
     msg["From"] = smtp_user
     msg["To"] = smtp_to
-    part1 = MIMEText(body, "plain", "utf-8")
-    msg.attach(part1)
+    msg["Subject"] = subject
+    msg.add_header("Content-Type", "text/plain; charset=UTF-8")
+    msg.set_payload(body)
 
     # send email
     server = smtplib.SMTP_SSL(smtp_host, 465)
     server.ehlo()
     server.login(smtp_user, smtp_password)
-    server.sendmail(smtp_user, smtp_to, msg.as_string())
+    server.sendmail(smtp_user, smtp_to, msg.as_string().encode("utf-8"))
     server.close()
 
 

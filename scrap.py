@@ -68,7 +68,6 @@ def main():
     current = datetime.datetime.now()
     current_date = current.strftime("%Y-%m-%d")
 
-    texts = []
     if "weekly" in sys.argv:
         subject = f"New weekly HABR articles {current_date}"
         urls = [
@@ -80,7 +79,7 @@ def main():
         subject = f"New HABR articles {current_date}"
         urls = ["https://habr.com/ru/top/daily/"]
 
-    texts += [
+    texts = [
         BODY_TEMPLATE.format(**article)
         for url in urls
         for article in get_habr_articles(url)

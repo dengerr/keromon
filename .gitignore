@@ -1,5 +1,7 @@
 .idea
 .venv
+__pycache__
 email.ini
 subscriptions
 yt_cookies.txt
+yt.xml

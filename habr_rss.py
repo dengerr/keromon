@@ -24,12 +24,6 @@ if __name__ == "__main__":
         link=urls[0],
         description="Weekly HABR articles for copypaste to markdown editor",
         language="ru",
-        pubDate=current,
-        lastBuildDate=current,
-        # docs="http://blogs.law.harvard.edu/tech/rss",
-        # generator="Weblog Editor 2.0",
-        # managingEditor="editor@example.com",
-        # webMaster="webmaster@example.com",
     )
 
     texts = [

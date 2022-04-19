@@ -1,0 +1,101 @@
+import json
+import sys
+
+import rss
+
+url = "https://www.youtube.com/feed/subscriptions"
+
+
+def main():
+    channel = dict(
+        title="YT subscriptions RSS",
+        link=url,
+        # description="",
+        language="ru",
+    )
+    rss.print_rss2(channel, load_items())
+
+
+def debug():
+    with open('subscriptions', 'r') as f:
+        output = get_from_json(f.read())
+    for item in get_items(output):
+        debug_item(item)
+
+
+def load_items():
+    with open('subscriptions', 'r') as f:
+        output = get_from_json(f.read())
+    for item in get_items(output):
+        yield load_item(item)
+
+
+def get_items(output):
+    tab = output['contents']['twoColumnBrowseResultsRenderer']['tabs'][0]
+    contents = tab['tabRenderer']['content']['sectionListRenderer']['contents']
+    for content in contents:
+        content = list(content.values())[0]
+        if 'contents' in content:
+            for cont in content['contents']:
+                items = cont['shelfRenderer']['content']['gridRenderer']['items']
+                for item in items:
+                    yield item['gridVideoRenderer']
+
+
+def load_item(item):
+    title = item['title']['runs'][0]['text']
+    channel = item['shortBylineText']['runs'][0]['text']
+    thumbnail = item['thumbnail']['thumbnails'][-1]['url']
+    url = "https://www.youtube.com/watch?v=" + item['videoId']
+    description = f'{title}<br/><br/><img src="{thumbnail}"/><br/>{channel}'
+    result = {
+        'title': f"{channel}: {title}",
+        # 'channel': channel,
+        # 'thumb': thumbnail,
+        'link': url,
+        'description': description,
+        # 'pubDate': current,
+        'guid': item['videoId'],
+    }
+    for overlay in item['thumbnailOverlays']:
+        if 'thumbnailOverlayTimeStatusRenderer' in overlay:
+            duration = overlay['thumbnailOverlayTimeStatusRenderer']['text']
+            if 'simpleText' in duration:
+                # result['duration'] = duration['simpleText']
+                result['description'] += "<br/>" + duration['simpleText']
+    return result
+
+
+def debug_item(item):
+    pp(item)
+    print()
+
+
+def get_from_json(output):
+    output = output.split("var ytInitialData =", 1)[1]
+    output = output.split(";</script>", 1)[0]
+    return json.loads(output)
+
+
+def pp(val, maxi=150):
+    if isinstance(val, dict):
+        if len(val) == 1:
+            for k,v in val.items():
+                print(k,)
+                return pp(v, maxi)
+        for k,v in val.items():
+            print(k, ':', str(v)[:maxi])
+    elif isinstance(val, list):
+        print('list...')
+        for i, item in enumerate(val):
+            print('    ', i, '',  end='')
+            pp(item)
+    else:
+        print(val)
+
+
+if __name__ == "__main__":
+    if 'debug' in sys.argv:
+        debug()
+    else:
+        main()

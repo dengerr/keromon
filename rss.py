@@ -2,6 +2,15 @@ import datetime
 
 
 def print_rss2(channel, items):
+    current = datetime.datetime.now()
+    channel = channel.copy().update(
+        pubDate=current,
+        lastBuildDate=current,
+        # docs="http://blogs.law.harvard.edu/tech/rss",
+        # generator="Weblog Editor 2.0",
+        # managingEditor="editor@example.com",
+        # webMaster="webmaster@example.com",
+    )
     print('<?xml version="1.0"?>')
     print('<rss version="2.0">')
     print("  <channel>")

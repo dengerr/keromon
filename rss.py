@@ -3,7 +3,8 @@ import datetime
 
 def print_rss2(channel, items):
     current = datetime.datetime.now()
-    channel = channel.copy().update(
+    channel = channel.copy()
+    channel.update(
         pubDate=current,
         lastBuildDate=current,
         # docs="http://blogs.law.harvard.edu/tech/rss",

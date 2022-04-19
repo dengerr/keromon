@@ -47,7 +47,8 @@ def load_item(item):
     channel = item['shortBylineText']['runs'][0]['text']
     thumbnail = item['thumbnail']['thumbnails'][-1]['url']
     url = "https://www.youtube.com/watch?v=" + item['videoId']
-    description = f'{title}<br/><br/><img src="{thumbnail}"/><br/>{channel}'
+    # description = f'{title}<br/>{channel}<br/><img src="{thumbnail}"/>'
+    description = f'<img src="{thumbnail}"/>'
     result = {
         'title': f"{channel}: {title}",
         # 'channel': channel,

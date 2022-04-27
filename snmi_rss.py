@@ -21,7 +21,8 @@ def get_content(url):
     soup = BeautifulSoup(response.text, "html.parser")
     title = soup.body.find("div", class_="paper__title").text
     content = soup.body.find("div", class_="paper__content").decode_contents()
-    return title, content
+    date = soup.body.find("div", class_="paper__date").text
+    return title, content, date
 
 
 if __name__ == "__main__":
@@ -35,13 +36,13 @@ if __name__ == "__main__":
         language="ru",
     )
 
-    title, content = get_content(url)
+    title, content, date = get_content(url)
 
     item = dict(
         title=title,
         link=url,
         description=content,
         pubDate=current,
-        guid=current_date,
+        guid=date,
     )
     rss.print_rss2(channel, [item])

@@ -28,7 +28,7 @@ def get_content(soup):
     title = ""
     description = []
     for tag in content.children:
-        print(type(tag), dir(tag))
+        # print(type(tag), dir(tag))
         if tag.name == "h2":
             if title:
                 yield {"title": title,
@@ -37,7 +37,7 @@ def get_content(soup):
             description = []
         elif hasattr(tag, 'decode_contents'):
             description.append(tag.decode_contents())
-        elif str(tag):
+        elif tag:
             description.append(f"<{tag.name}>{tag}</{tag.name}>")
             # description.append(tag)
     yield {"title": title, "description": "".join(description)}

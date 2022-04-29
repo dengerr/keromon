@@ -38,7 +38,7 @@ def get_content(soup):
         elif hasattr(tag, 'decode_contents'):
             description.append(tag.decode_contents())
         else:
-            if str(tag) == "None":
+            if str(tag).strip() == "None":
                 continue
             if tag.name:
                 description.append(f"<{tag.name}>{tag}</{tag.name}>")

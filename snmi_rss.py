@@ -15,14 +15,31 @@ description = ('Проект предназначен не для тех, ком
 'фильтр/файрвол.')
 
 
-def get_content(url):
+def prepare(url):
     response = requests.get(url)
     response.encoding = 'utf-8'
     soup = BeautifulSoup(response.text, "html.parser")
-    title = soup.body.find("div", class_="paper__title").text
-    content = soup.body.find("div", class_="paper__content").decode_contents()
-    date = soup.body.find("div", class_="paper__date").text
-    return title, content, date
+    return soup
+
+
+def get_content(soup):
+    content = soup.body.find("div", class_="paper__content")
+    # print(dir(content))
+    title = ""
+    description = []
+    for tag in content.children:
+        # print(type(tag), dir(tag))
+        if tag.name == "h2":
+            if title:
+                yield {"title": title,
+                       "description": "".join(description)}
+            title = tag.text
+            description = []
+        elif hasattr(tag, 'decode_contents'):
+            description.append(tag.decode_contents())
+        else:
+            description.append(f"<p>{tag}</p>")
+    yield {"title": title, "description": "".join(description)}
 
 
 if __name__ == "__main__":
@@ -36,13 +53,16 @@ if __name__ == "__main__":
         language="ru",
     )
 
-    title, content, date = get_content(url)
+    soup = prepare(url)
+    date = soup.body.find("div", class_="paper__date").text
+    content = get_content(soup)
 
-    item = dict(
-        title=title,
+    items = [dict(
+        title=item['title'],
         link=url,
-        description=content,
+        description=item['description'],
         pubDate=current,
-        guid=date,
-    )
-    rss.print_rss2(channel, [item])
+        guid=date + str(i),
+    ) for i, item in enumerate(get_content(soup))]
+
+    rss.print_rss2(channel, items)

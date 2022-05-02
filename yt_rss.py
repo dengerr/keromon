@@ -39,7 +39,7 @@ def get_items(output):
             for cont in content['contents']:
                 items = cont['shelfRenderer']['content']['gridRenderer']['items']
                 for _item in items:
-                    item = item['gridVideoRenderer']
+                    item = _item['gridVideoRenderer']
                     item['duration'] = get_duration(item)
                     if item['duration']:
                         yield item

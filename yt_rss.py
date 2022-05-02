@@ -38,8 +38,19 @@ def get_items(output):
         if 'contents' in content:
             for cont in content['contents']:
                 items = cont['shelfRenderer']['content']['gridRenderer']['items']
-                for item in items:
-                    yield item['gridVideoRenderer']
+                for _item in items:
+                    item = item['gridVideoRenderer']
+                    item['duration'] = get_duration(item)
+                    if item['duration']:
+                        yield item
+
+
+def get_duration(item):
+    for overlay in item['thumbnailOverlays']:
+        if 'thumbnailOverlayTimeStatusRenderer' in overlay:
+            duration = overlay['thumbnailOverlayTimeStatusRenderer']['text']
+            if 'simpleText' in duration:
+                return duration['simpleText']
 
 
 def load_item(item):
@@ -47,8 +58,8 @@ def load_item(item):
     channel = item['shortBylineText']['runs'][0]['text']
     thumbnail = item['thumbnail']['thumbnails'][-1]['url']
     url = "https://www.youtube.com/watch?v=" + item['videoId']
-    # description = f'{title}<br/>{channel}<br/><img src="{thumbnail}"/>'
-    description = f'<img src="{thumbnail}"/>'
+    duration = item["duration"]
+    description = f'<img src="{thumbnail}"/><br/>{duration}'
     result = {
         'title': f"{channel}: {title}",
         # 'channel': channel,
@@ -58,12 +69,6 @@ def load_item(item):
         # 'pubDate': current,
         'guid': item['videoId'],
     }
-    for overlay in item['thumbnailOverlays']:
-        if 'thumbnailOverlayTimeStatusRenderer' in overlay:
-            duration = overlay['thumbnailOverlayTimeStatusRenderer']['text']
-            if 'simpleText' in duration:
-                # result['duration'] = duration['simpleText']
-                result['description'] += "<br/>" + duration['simpleText']
     return result
 
 

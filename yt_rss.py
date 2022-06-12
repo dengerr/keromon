@@ -49,7 +49,7 @@ def get_duration(item):
     for overlay in item['thumbnailOverlays']:
         if 'thumbnailOverlayTimeStatusRenderer' in overlay:
             duration = overlay['thumbnailOverlayTimeStatusRenderer']['text']
-            if 'simpleText' in duration:
+            if 'simpleText' in duration and ':' in duration['simpleText']:
                 return duration['simpleText']
 
 

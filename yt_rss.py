@@ -61,7 +61,7 @@ def load_item(item):
     for overlay in item['thumbnailOverlays']:
         if 'thumbnailOverlayTimeStatusRenderer' in overlay:
             duration = overlay['thumbnailOverlayTimeStatusRenderer']['text']
-            if 'simpleText' in duration:
+            if 'simpleText' in duration and ':' in duration['simpleText']:
                 # result['duration'] = duration['simpleText']
                 result['description'] += "<br/>" + duration['simpleText']
     return result

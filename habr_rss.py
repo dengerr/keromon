@@ -55,14 +55,14 @@ if __name__ == "__main__":
             guid=current_date,
         ))
     else:
-        for mini_texts in texts_generator(texts):
+        for i, mini_texts in enumerate(texts_generator(texts)):
             body = "<br/>\n".join(mini_texts)
             items.append(dict(
                 title=f"Weekly HABR {current_date}",
                 link=urls[0],
                 description=body,
                 pubDate=current,
-                guid=current_date,
+                guid=current_date + f'-{i}',
             ))
 
     rss.print_rss2(channel, items)

@@ -59,7 +59,7 @@ if __name__ == "__main__":
             body = "<br/>\n".join(mini_texts)
             if body:
                 items.append(dict(
-                    title=f"Weekly HABR {current_date}",
+                    title=f"Weekly HABR {current_date} {i+1}",
                     link=urls[0],
                     description=body,
                     pubDate=current,

@@ -29,7 +29,7 @@ def get_content(soup):
     description = []
     for tag in content.children:
         # print(type(tag), dir(tag))
-        if tag.name == "h2":
+        if tag.name == "h1":
             if title:
                 yield {"title": title,
                        "description": "".join(description)}

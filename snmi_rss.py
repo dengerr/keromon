@@ -51,6 +51,10 @@ if __name__ == "__main__":
     current = datetime.datetime.now()
     current_date = current.strftime("%Y-%m-%d")
 
+    archive_soup = prepare(url + "архив/")
+    first_link = archive_soup.body.find("a", class_="news-list__link")
+    url = first_link.attrs["href"]
+
     channel = dict(
         title=title,
         link=url,

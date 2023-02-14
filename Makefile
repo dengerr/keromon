@@ -9,3 +9,8 @@ subscriptions: yt_cookies.txt
 
 yt: subscriptions
 	@python yt_rss.py > yt.xml
+
+update_killdozer_cookies:
+	rm yt_cookies
+	make yt_cookies.txt
+	scp yt_cookies.txt killdozer:keromon/

@@ -9,6 +9,7 @@ import sys
 import habr_processor
 import extract
 import load
+import transform
 
 
 def main():
@@ -17,13 +18,15 @@ def main():
     else:
         processor = habr_processor.DaylyHabrProcessor()
 
+    # extract
     articles = [
         article
         for url in processor.urls
         for article in extract.get_habr_articles(url)
     ]
 
-    texts = [load.md_task_format(article) for article in articles]
+    # load to markdown + email (or std out)
+    texts = [transform.md_task_format(article) for article in articles]
     body = "\n".join(texts)
 
     if "print" in sys.argv:

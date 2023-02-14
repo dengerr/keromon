@@ -4,7 +4,7 @@ import datetime
 class BaseEtlProcessor():
     def __init__(self):
         self.current = datetime.datetime.now()
-        self.current_date = self.current.strftime("%Y-%m-%d")
+        self.date_str = self.current.strftime("%Y-%m-%d")
 
 
 class WeeklyHabrProcessor(BaseEtlProcessor):
@@ -16,7 +16,7 @@ class WeeklyHabrProcessor(BaseEtlProcessor):
 
     @property
     def subject(self):
-        return f"New weekly HABR articles {self.current_date}"
+        return f"New weekly HABR articles {self.date_str}"
 
 
 class DaylyHabrProcessor(BaseEtlProcessor):
@@ -24,6 +24,6 @@ class DaylyHabrProcessor(BaseEtlProcessor):
 
     @property
     def subject(self):
-        return f"New HABR articles {self.current_date}"
+        return f"New HABR articles {self.date_str}"
 
 

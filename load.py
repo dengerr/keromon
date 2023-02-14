@@ -4,21 +4,6 @@ import smtplib
 from configparser import ConfigParser
 import email.message
 
-MD_BODY_TEMPLATE = """\
-- [ ] {voting} [{text}]({url})\
-"""
-HTML_BODY_TEMPLATE = """\
-- [ ] {voting} <a href="{url}">{text}</a>\
-"""
-
-
-def md_task_format(article: dict):
-    return MD_BODY_TEMPLATE.format(**article)
-
-
-def html_row_format(article: dict):
-    return HTML_BODY_TEMPLATE.format(**article)
-
 
 def send_email(subject, body):
     # get credentials from config

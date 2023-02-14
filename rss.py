@@ -1,5 +1,5 @@
 from abc import abstractmethod
-import datetime
+from datetime import datetime
 
 
 WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -9,8 +9,8 @@ MONTHS = [
 ]
 
 
-def print_rss2(channel, items):
-    current = datetime.datetime.now()
+def print_rss2(channel: dict, items: list):
+    current = datetime.now()
     channel = channel.copy()
     channel.update(
         lastBuildDate=current,
@@ -37,7 +37,7 @@ def print_rss2(channel, items):
 
 
 def prepare(value):
-    if isinstance(value, datetime.datetime):
+    if isinstance(value, datetime):
         return _date(value)
     else:
         return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -60,42 +60,48 @@ def _date(date):
 
 class RssPrint:
     channel: dict
-    processor: 'BaseEtlProcessor'
     title: str
+    dt: datetime
+    date_format: str = "%Y-%m-%d"
 
-    def __init__(self, channel, processor, title):
+    def __init__(self, channel, title, dt=None):
         self.channel = channel
-        self.processor = processor
         self.title = title
+        self.dt = dt or datetime.now()
 
     @property
-    def url(self):
-        return self.processor.urls[0]
+    def url(self) -> str:
+        return self.channel['link']
 
-    def __call__(self, texts):
+    @property
+    def date_str(self) -> str:
+        return self.dt.strftime(self.date_format)
+
+    def __call__(self, texts: list):
         print_rss2(self.channel, self.get_items(texts))
 
     @abstractmethod
-    def get_items(self, texts):
+    def get_items(self, texts) -> list:
         pass
 
 
 class AllInOneRssPrint(RssPrint):
-    def get_items(self, texts):
+    def get_items(self, texts) -> list:
         body = "<br/>\n".join(texts)
         items = [dict(
             title=self.title,
             link=self.url,
             description=body,
-            pubDate=self.processor.current,
-            guid=self.processor.current_date,
+            pubDate=self.dt,
+            guid=self.date_str,
         )]
         return items
+
 
 class GroupedRssPrint(RssPrint):
     articles_count_in_one_post: int = 5
 
-    def get_items(self, texts):
+    def get_items(self, texts) -> list:
         items = []
         for i, mini_texts in enumerate(self._texts_generator(texts)):
             body = "<br/>\n".join(mini_texts)
@@ -104,8 +110,8 @@ class GroupedRssPrint(RssPrint):
                     title=f"{self.title} {i+1}",
                     link=self.url,
                     description=body,
-                    pubDate=self.processor.current,
-                    guid=self.processor.current_date + f'-{i}',
+                    pubDate=self.dt,
+                    guid=self.date_str + f'-{i}',
                 ))
         return items
 

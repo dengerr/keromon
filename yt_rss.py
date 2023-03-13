@@ -1,5 +1,4 @@
 import json
-from pprint import pprint
 import sys
 
 import rss
@@ -85,15 +84,15 @@ def load_item(item):
     return result
 
 
-def debug_item(item):
-    pp(item)
-    print()
-
-
 def get_from_json(output):
     output = output.split("var ytInitialData =", 1)[1]
     output = output.split(";</script>", 1)[0]
     return json.loads(output)
+
+
+def debug_item(item):
+    pp(item)
+    print()
 
 
 def pp(val, maxi=150):

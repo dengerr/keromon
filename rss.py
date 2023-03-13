@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from datetime import datetime
+import typing as t
 
 
 WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -9,7 +10,7 @@ MONTHS = [
 ]
 
 
-def print_rss2(channel: dict, items: list):
+def print_rss2(channel: t.Dict[str, t.Any], items: t.Iterable):
     current = datetime.now()
     channel = channel.copy()
     channel.update(
@@ -36,14 +37,14 @@ def print_rss2(channel: dict, items: list):
     print("</rss>")
 
 
-def prepare(value):
+def prepare(value) -> t.Optional[str]:
     if isinstance(value, datetime):
         return _date(value)
     else:
         return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def _date(date):
+def _date(date) -> t.Optional[str]:
     if date is None:
         return None
 

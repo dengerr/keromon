@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 import rss
 
 
-url = "https://снми.рф/"
+base_url = "https://снми.рф/"
 title = "Средство НеМассовой Информации"
 description = ('Проект предназначен не для тех, кому нужен "ещё один '
 'источник информации", он предназначен для тех, кому хочется '
@@ -15,7 +15,35 @@ description = ('Проект предназначен не для тех, ком
 'фильтр/файрвол.')
 
 
-def prepare(url):
+def main():
+    current = datetime.datetime.now()
+
+    archive_soup = get_soup(base_url + "архив/")
+    first_link = archive_soup.body.find("a", class_="news-list__link")
+    url = first_link.attrs["href"]
+
+    channel = dict(
+        title=title,
+        link=url,
+        description=description,
+        language="ru",
+    )
+
+    soup = get_soup(url)
+    date = soup.body.find("div", class_="paper__date").text
+
+    items = [dict(
+        title=item['title'],
+        link=url,
+        description=item['description'],
+        pubDate=current,
+        guid=date + str(i),
+    ) for i, item in enumerate(get_content(soup))]
+
+    rss.print_rss2(channel, items)
+
+
+def get_soup(url) -> BeautifulSoup:
     response = requests.get(url)
     response.encoding = 'utf-8'
     soup = BeautifulSoup(response.text, "html.parser")
@@ -24,11 +52,9 @@ def prepare(url):
 
 def get_content(soup):
     content = soup.body.find("div", class_="paper__content")
-    # print(dir(content))
     title = ""
     description = []
     for tag in content.children:
-        # print(type(tag), dir(tag))
         if tag.name == "h1":
             if title:
                 yield {"title": title,
@@ -48,30 +74,4 @@ def get_content(soup):
 
 
 if __name__ == "__main__":
-    current = datetime.datetime.now()
-    current_date = current.strftime("%Y-%m-%d")
-
-    archive_soup = prepare(url + "архив/")
-    first_link = archive_soup.body.find("a", class_="news-list__link")
-    url = first_link.attrs["href"]
-
-    channel = dict(
-        title=title,
-        link=url,
-        description=description,
-        language="ru",
-    )
-
-    soup = prepare(url)
-    date = soup.body.find("div", class_="paper__date").text
-    content = get_content(soup)
-
-    items = [dict(
-        title=item['title'],
-        link=url,
-        description=item['description'],
-        pubDate=current,
-        guid=date + str(i),
-    ) for i, item in enumerate(get_content(soup))]
-
-    rss.print_rss2(channel, items)
+    main()

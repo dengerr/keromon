@@ -1,4 +1,5 @@
 import json
+from pprint import pprint
 import sys
 
 import rss
@@ -37,12 +38,21 @@ def get_items(output):
         content = list(content.values())[0]
         if 'contents' in content:
             for cont in content['contents']:
-                items = cont['shelfRenderer']['content']['gridRenderer']['items']
-                for _item in items:
-                    item = _item['gridVideoRenderer']
-                    item['duration'] = get_duration(item)
-                    if item['duration']:
-                        yield item
+                shelf_content = cont['shelfRenderer']['content']
+                try:
+                    if 'gridRenderer' in shelf_content:
+                        items = shelf_content['gridRenderer']['items']
+                    else:
+                        items = shelf_content['expandedShelfContentsRenderer']['items']
+                except Exception as e:
+                    sys.stderr.write(f"Exception: {e}\n")
+                    sys.stderr.write(str(shelf_content))
+                else:
+                    for _item in items:
+                        item = _item.get('gridVideoRenderer') or _item.get('videoRenderer')
+                        item['duration'] = get_duration(item)
+                        if item['duration']:
+                            yield item
 
 
 def get_duration(item):
@@ -54,6 +64,9 @@ def get_duration(item):
 
 
 def load_item(item):
+    """
+    Изымаем из айтема title, link, thumbnail, duration
+    """
     title = item['title']['runs'][0]['text']
     channel = item['shortBylineText']['runs'][0]['text']
     thumbnail = item['thumbnail']['thumbnails'][-1]['url']

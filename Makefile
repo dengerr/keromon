@@ -11,6 +11,6 @@ yt: subscriptions
 	@python yt_rss.py > yt.xml
 
 update_killdozer_cookies:
-	rm yt_cookies
+	rm yt_cookies.txt
 	make yt_cookies.txt
 	scp yt_cookies.txt killdozer:keromon/

@@ -1,5 +1,5 @@
 habr_weekly.xml:
-	python habr_rss.py > habr_weekly.xml
+	python3 habr_rss.py > habr_weekly.xml
 
 yt_cookies.txt:
 	./extract_cookies.sh | grep youtube.com > yt_cookies.txt

@@ -90,7 +90,7 @@ def get_items(output):
             _pprint(helper_get_from_dict(contents))
     elif 'richGridRenderer' in tab['tabRenderer']['content']:
         contents = tab['tabRenderer']['content']['richGridRenderer']['contents']
-        for content in contents[:10]:
+        for content in contents:
             _print('-' * 80)
             _print('content:')
             item = helper_get_from_dict(content)

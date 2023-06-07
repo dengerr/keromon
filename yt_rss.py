@@ -98,7 +98,8 @@ def get_items(output):
                 continue
             _pprint(item)
             item['duration'] = get_duration(item)
-            yield item
+            if item['duration']:
+                yield item
     else:
         _print('tab:')
         _pprint(helper_get_from_dict(tab))

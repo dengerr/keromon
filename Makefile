@@ -17,3 +17,5 @@ update_killdozer_cookies:
 	rm yt_cookies.txt
 	make yt_cookies.txt
 	scp yt_cookies.txt killdozer:keromon/
+	ssh killdozer "wget --load-cookies keromon/yt_cookies.txt https://www.youtube.com/feed/subscriptions -O subscriptions"
+	ssh killdozer "python3 keromon/yt_rss.py > /var/www/html/buryi.de/yt.xml"

@@ -70,6 +70,10 @@ def get_items(output):
             content = list(content.values())[0]
             if 'contents' in content:
                 for cont in content['contents']:
+                    if 'shelfRenderer' not in cont:
+                        sys.stderr.write(helper_get_from_dict(cont, ['title', 'runs', 'text']))
+                        return
+
                     shelf_content = cont['shelfRenderer']['content']
                     try:
                         if 'gridRenderer' in shelf_content:

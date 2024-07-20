@@ -100,7 +100,7 @@ class AllInOneRssPrint(RssPrint):
 
 
 class GroupedRssPrint(RssPrint):
-    articles_count_in_one_post: int = 5
+    articles_count_in_one_post: int = 20
 
     def get_items(self, texts) -> list:
         items = []

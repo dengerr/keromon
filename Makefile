@@ -18,4 +18,21 @@ update_killdozer_cookies:
 	make yt_cookies.txt
 	scp yt_cookies.txt killdozer:keromon/
 	ssh killdozer "wget --load-cookies keromon/yt_cookies.txt https://www.youtube.com/feed/subscriptions -O subscriptions"
-	ssh killdozer "python3 keromon/yt_rss.py > /var/www/html/buryi.de/yt.xml"
+	ssh killdozer "python3 keromon/yt_rss.py > /var/www/html/buryi.ru/yt.xml"
+
+update_karak_cookies:
+	rm yt_cookies.txt
+	make yt_cookies.txt
+	scp yt_cookies.txt karak:keromon/
+	ssh karak "wget --load-cookies keromon/yt_cookies.txt https://www.youtube.com/feed/subscriptions -O subscriptions"
+	ssh karak "python3 keromon/yt_rss.py > /var/www/mirror.buryi.ru/yt.xml"
+
+update_cubic_cookies:
+	rm yt_cookies.txt
+	make yt_cookies.txt
+	scp yt_cookies.txt cubic:keromon/
+	ssh cubic "wget --load-cookies keromon/yt_cookies.txt https://www.youtube.com/feed/subscriptions -O subscriptions"
+	ssh cubic "python3 keromon/yt_rss.py > /var/www/html/buryi.ru/yt.xml"
+
+copy_cubic_karak_habr:
+	scp cubic:/var/www/html/buryi.ru/habr_weekly.xml karak:/var/www/mirror.buryi.ru/

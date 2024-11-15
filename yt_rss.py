@@ -124,6 +124,8 @@ def load_item(item):
     """
     title = helper_get_from_dict(item, ['title', 'runs', 'text'])
     # title = item['title']['runs'][0]['text']
+    if title.isupper():
+        title = title.capitalize()
     channel = helper_get_from_dict(item, ['shortBylineText', 'runs', 'text'])
     # channel = item['shortBylineText']['runs'][0]['text']
     thumbnail = item['thumbnail']['thumbnails'][-1]['url']

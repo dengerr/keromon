@@ -26,8 +26,8 @@ def debug():
 
 
 def _print(*args, **kwargs):
-    # print(*args, **kwargs)
-    pass
+    if 'debug' in sys.argv:
+        print(*args, **kwargs)
 
 
 def _pprint(*args, **kwargs):
@@ -98,11 +98,12 @@ def get_items(output):
             _print('-' * 80)
             _print('content:')
             item = helper_get_from_dict(content)
-            if 'thumbnail' not in item:
+            if 'contentImage' not in item:
                 continue
             _pprint(item)
             item['duration'] = get_duration(item)
             if item['duration']:
+                print('duration', item['duration'])
                 yield item
     else:
         _print('tab:')
@@ -111,25 +112,32 @@ def get_items(output):
 
 
 def get_duration(item):
-    for overlay in item['thumbnailOverlays']:
-        if 'thumbnailOverlayTimeStatusRenderer' in overlay:
-            duration = overlay['thumbnailOverlayTimeStatusRenderer']['text']
-            if 'simpleText' in duration and ':' in duration['simpleText']:
-                return duration['simpleText']
+    model = item['contentImage']['thumbnailViewModel']
+    for overlay in model.get('overlays', []):
+        if 'thumbnailOverlayBadgeViewModel' in overlay:
+            for badge in overlay['thumbnailOverlayBadgeViewModel']['thumbnailBadges']:
+                if 'thumbnailBadgeViewModel' in badge:
+                    duration = badge['thumbnailBadgeViewModel']
+                    if 'text' in duration and ':' in duration['text']:
+                        return duration['text']
 
 
 def load_item(item):
     """
     Изымаем из айтема title, link, thumbnail, duration
     """
-    title = helper_get_from_dict(item, ['title', 'runs', 'text'])
+    title = item['metadata']['lockupMetadataViewModel']['title']['content']
     # title = item['title']['runs'][0]['text']
     if title.isupper():
         title = title.capitalize()
     channel = helper_get_from_dict(item, ['shortBylineText', 'runs', 'text'])
     # channel = item['shortBylineText']['runs'][0]['text']
-    thumbnail = item['thumbnail']['thumbnails'][-1]['url']
-    url = "https://www.youtube.com/watch?v=" + item['videoId']
+    image = item['contentImage']['thumbnailViewModel']['image']
+    for source in image['sources']:
+        if source.get('url'):
+            thumbnail = source['url']
+            break
+    url = "https://www.youtube.com/watch?v=" + item['contentId']
     duration = item["duration"]
     description = f'<img src="{thumbnail}"/><br/>{duration}'
     result = {
@@ -139,7 +147,7 @@ def load_item(item):
         'link': url,
         'description': description,
         # 'pubDate': current,
-        'guid': item['videoId'],
+        'guid': item['contentId'],
     }
     return result
 

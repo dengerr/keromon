@@ -129,7 +129,9 @@ def load_item(item):
     # title = item['title']['runs'][0]['text']
     if title.isupper():
         title = title.capitalize()
-    channel = item['metadata']['contentMetadataViewModel']['metadataRows'][0]['metadataParts'][0]['text']['content']
+    for row in item['metadata']['lockupMetadataViewModel']['metadata']['contentMetadataViewModel']['metadataRows']:
+        if channel := row['metadataParts'][0]['text']['content']:
+            break
     # channel = item['shortBylineText']['runs'][0]['text']
     image = item['contentImage']['thumbnailViewModel']['image']
     for source in image['sources']:

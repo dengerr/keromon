@@ -129,7 +129,7 @@ def load_item(item):
     # title = item['title']['runs'][0]['text']
     if title.isupper():
         title = title.capitalize()
-    channel = helper_get_from_dict(item, ['shortBylineText', 'runs', 'text'])
+    channel = item['metadata']['contentMetadataViewModel']['metadataRows'][0]['metadataParts'][0]['text']['content']
     # channel = item['shortBylineText']['runs'][0]['text']
     image = item['contentImage']['thumbnailViewModel']['image']
     for source in image['sources']:

@@ -103,7 +103,6 @@ def get_items(output):
             _pprint(item)
             item['duration'] = get_duration(item)
             if item['duration']:
-                print('duration', item['duration'])
                 yield item
     else:
         _print('tab:')

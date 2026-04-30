@@ -1,8 +1,12 @@
 .idea
 .venv
 __pycache__
+.python-version
 email.ini
 subscriptions
 yt_cookies.txt
 *.xml
 *.json
+*.opml
+*.db
+viewed_urls.txt

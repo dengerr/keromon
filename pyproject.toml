@@ -1,0 +1,11 @@
+[project]
+name = "keromon"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "beautifulsoup4==4.10.0",
+    "lxml>=6.0.0",
+    "requests==2.27.1",
+]

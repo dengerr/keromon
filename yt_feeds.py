@@ -160,10 +160,18 @@ def import_opml(opml_path):
     print(f"Imported {len(outlines)} channels from {opml_path}")
 
 
-def fetch_all_feeds(proxy=None):
+def fetch_all_feeds(proxy=None, all_channels=False):
     conn = get_db()
     c = conn.cursor()
-    c.execute("SELECT id, xml_url FROM channels")
+    if all_channels:
+        c.execute("SELECT id, xml_url FROM channels")
+    else:
+        c.execute("""
+            SELECT DISTINCT c.id, c.xml_url
+            FROM channels c
+            INNER JOIN videos v ON c.id = v.channel_id
+            WHERE v.pub_date >= datetime('now', '-30 days')
+        """)
     channels = c.fetchall()
     total_videos = 0
     for channel in channels:
@@ -262,6 +270,36 @@ def show_stats():
     conn.close()
 
 
+def show_channel_stats():
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("""
+        SELECT
+            c.title,
+            COUNT(v.id) as total_videos,
+            SUM(CASE WHEN v.status = 'new' THEN 1 ELSE 0 END) as new_count,
+            SUM(CASE WHEN v.status = 'not_interested' THEN 1 ELSE 0 END) as not_interested_count,
+            SUM(CASE WHEN v.status = 'viewed' THEN 1 ELSE 0 END) as viewed_count,
+            SUM(CASE WHEN v.status = 'todo' THEN 1 ELSE 0 END) as todo_count,
+            MAX(v.pub_date) as last_video_date
+        FROM channels c
+        LEFT JOIN videos v ON c.id = v.channel_id
+        GROUP BY c.id, c.title
+        ORDER BY last_video_date DESC
+    """)
+    channels = c.fetchall()
+    if not channels:
+        print("No channels found")
+        conn.close()
+        return
+    for ch in channels:
+        print(f"Channel: {ch['title']}")
+        print(f"  Total: {ch['total_videos']}, new={ch['new_count']}, not_interested={ch['not_interested_count']}, viewed={ch['viewed_count']}, todo={ch['todo_count']}")
+        print(f"  Last: {ch['last_video_date']}")
+        print()
+    conn.close()
+
+
 def extract_video_id(url_or_id):
     url_or_id = url_or_id.strip()
     if url_or_id.startswith("yt:video:"):
@@ -310,6 +348,11 @@ def main():
         default="http://127.0.0.1:8881",
         help="HTTP proxy (default: http://127.0.0.1:8881)",
     )
+    fetch_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Fetch from all channels (default: only channels with videos in last 30 days)",
+    )
     list_parser = subparsers.add_parser("list", help="List videos")
     list_parser.add_argument(
         "--status", help="Filter by status (new, not_interested, viewed, todo)"
@@ -319,6 +362,7 @@ def main():
     update_parser.add_argument("--guid", required=True, help="Video GUID")
     update_parser.add_argument("--status", required=True, help="New status")
     subparsers.add_parser("stats", help="Show statistics")
+    subparsers.add_parser("channel-stats", help="Show per-channel statistics")
     subparsers.add_parser("mark-viewed", help="Mark videos as viewed from stdin URLs")
 
     args = parser.parse_args()
@@ -329,13 +373,15 @@ def main():
     elif args.command == "import-opml":
         import_opml(args.opml_file)
     elif args.command == "fetch":
-        fetch_all_feeds(args.proxy)
+        fetch_all_feeds(args.proxy, args.all)
     elif args.command == "list":
         list_videos(args.status, args.limit)
     elif args.command == "update-status":
         update_status(args.guid, args.status)
     elif args.command == "stats":
         show_stats()
+    elif args.command == "channel-stats":
+        show_channel_stats()
     elif args.command == "mark-viewed":
         mark_viewed_from_stdin()
     else:

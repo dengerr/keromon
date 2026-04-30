@@ -1,7 +1,7 @@
 import datetime
 
 
-class BaseEtlProcessor():
+class BaseEtlProcessor:
     def __init__(self):
         self.current = datetime.datetime.now()
         self.date_str = self.current.strftime("%Y-%m-%d")
@@ -25,5 +25,3 @@ class DaylyHabrProcessor(BaseEtlProcessor):
     @property
     def subject(self):
         return f"New HABR articles {self.date_str}"
-
-

@@ -9,3 +9,14 @@ dependencies = [
     "lxml>=6.0.0",
     "requests==2.27.1",
 ]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.12",
+]

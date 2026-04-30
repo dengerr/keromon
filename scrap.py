@@ -6,8 +6,8 @@ create file email.ini from template email-example.ini
 
 import sys
 
-import habr_processor
 import extract
+import habr_processor
 import load
 import transform
 
@@ -20,9 +20,7 @@ def main():
 
     # extract
     articles = [
-        article
-        for url in processor.urls
-        for article in extract.get_habr_articles(url)
+        article for url in processor.urls for article in extract.get_habr_articles(url)
     ]
 
     # load to markdown + email (or std out)

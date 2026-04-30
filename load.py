@@ -1,8 +1,8 @@
-import os
-import sys
-import smtplib
-from configparser import ConfigParser
 import email.message
+import os
+import smtplib
+import sys
+from configparser import ConfigParser
 
 
 def send_email(subject, body):

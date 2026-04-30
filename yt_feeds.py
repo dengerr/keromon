@@ -1,34 +1,39 @@
 import argparse
+import html
 import sqlite3
 import xml.etree.ElementTree as ET
 from datetime import datetime
-import time
+
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-import html
 
-ATOM_NS = {'atom': 'http://www.w3.org/2005/Atom'}
-DB_FILE = 'feeds.db'
+ATOM_NS = {"atom": "http://www.w3.org/2005/Atom"}
+DB_FILE = "feeds.db"
+
 
 def adapt_datetime(val):
     return val.isoformat()
 
+
 def convert_datetime(val):
-    return datetime.fromisoformat(val.decode('utf-8'))
+    return datetime.fromisoformat(val.decode("utf-8"))
+
 
 sqlite3.register_adapter(datetime, adapt_datetime)
-sqlite3.register_converter('TIMESTAMP', convert_datetime)
+sqlite3.register_converter("TIMESTAMP", convert_datetime)
+
 
 def get_db():
     conn = sqlite3.connect(DB_FILE, detect_types=sqlite3.PARSE_DECLTYPES)
     conn.row_factory = sqlite3.Row
     return conn
 
+
 def init_db():
     conn = get_db()
     c = conn.cursor()
-    c.execute('''
+    c.execute("""
         CREATE TABLE IF NOT EXISTS channels (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
@@ -36,8 +41,8 @@ def init_db():
             html_url TEXT,
             imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    ''')
-    c.execute('''
+    """)
+    c.execute("""
         CREATE TABLE IF NOT EXISTS videos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             channel_id INTEGER NOT NULL,
@@ -51,54 +56,74 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (channel_id) REFERENCES channels(id)
         )
-    ''')
+    """)
     c.execute("PRAGMA table_info(videos)")
     columns = [row[1] for row in c.fetchall()]
-    if 'shorts' not in columns:
-        c.execute('ALTER TABLE videos ADD COLUMN shorts INTEGER DEFAULT 0')
+    if "shorts" not in columns:
+        c.execute("ALTER TABLE videos ADD COLUMN shorts INTEGER DEFAULT 0")
     conn.commit()
     conn.close()
 
+
 def parse_atom_feed(content):
     root = ET.fromstring(content)
-    entries = root.findall('atom:entry', ATOM_NS)
+    entries = root.findall("atom:entry", ATOM_NS)
     items = []
     for entry in entries:
-        title = entry.find('atom:title', ATOM_NS).text
-        link = ''
-        for link_elem in entry.findall('atom:link', ATOM_NS):
-            if link_elem.get('rel') == 'alternate' and link_elem.get('href') is not None:
-                link = link_elem.get('href')
+        title = entry.find("atom:title", ATOM_NS).text
+        link = ""
+        for link_elem in entry.findall("atom:link", ATOM_NS):
+            if (
+                link_elem.get("rel") == "alternate"
+                and link_elem.get("href") is not None
+            ):
+                link = link_elem.get("href")
                 break
-        desc_elem = entry.find('atom:summary', ATOM_NS) or entry.find('atom:content', ATOM_NS)
-        description = html.unescape(desc_elem.text) if desc_elem is not None and desc_elem.text else ''
-        pub_date_str = entry.find('atom:published', ATOM_NS).text
-        pub_date = datetime.fromisoformat(pub_date_str.replace('Z', '+00:00')) if pub_date_str else None
-        guid = entry.find('atom:id', ATOM_NS).text
-        is_shorts = 1 if '/shorts/' in link else 0
-        items.append({
-            'title': title,
-            'link': link,
-            'description': description,
-            'pub_date': pub_date,
-            'guid': guid,
-            'shorts': is_shorts,
-        })
+        desc_elem = entry.find("atom:summary", ATOM_NS) or entry.find(
+            "atom:content", ATOM_NS
+        )
+        description = (
+            html.unescape(desc_elem.text)
+            if desc_elem is not None and desc_elem.text
+            else ""
+        )
+        pub_date_str = entry.find("atom:published", ATOM_NS).text
+        pub_date = (
+            datetime.fromisoformat(pub_date_str.replace("Z", "+00:00"))
+            if pub_date_str
+            else None
+        )
+        guid = entry.find("atom:id", ATOM_NS).text
+        is_shorts = 1 if "/shorts/" in link else 0
+        items.append(
+            {
+                "title": title,
+                "link": link,
+                "description": description,
+                "pub_date": pub_date,
+                "guid": guid,
+                "shorts": is_shorts,
+            }
+        )
     return items
+
 
 def get_session(proxy=None):
     session = requests.Session()
-    retries = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
-    session.mount('http://', HTTPAdapter(max_retries=retries))
-    session.mount('https://', HTTPAdapter(max_retries=retries))
+    retries = Retry(
+        total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504]
+    )
+    session.mount("http://", HTTPAdapter(max_retries=retries))
+    session.mount("https://", HTTPAdapter(max_retries=retries))
     if proxy:
-        session.proxies = {'http': proxy, 'https': proxy}
+        session.proxies = {"http": proxy, "https": proxy}
     return session
+
 
 def fetch_feed(url, proxy=None):
     try:
         session = get_session(proxy)
-        resp = session.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=30)
+        resp = session.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
         resp.raise_for_status()
         return parse_atom_feed(resp.text)
     except requests.RequestException as e:
@@ -108,6 +133,7 @@ def fetch_feed(url, proxy=None):
         print(f"Error parsing {url}: {e}")
         return []
 
+
 def import_opml(opml_path):
     conn = get_db()
     c = conn.cursor()
@@ -115,36 +141,53 @@ def import_opml(opml_path):
     root = tree.getroot()
     outlines = root.findall('.//outline[@type="rss"]')
     for outline in outlines:
-        title = outline.get('title') or outline.get('text')
-        xml_url = outline.get('xmlUrl')
-        html_url = outline.get('htmlUrl')
+        title = outline.get("title") or outline.get("text")
+        xml_url = outline.get("xmlUrl")
+        html_url = outline.get("htmlUrl")
         if not xml_url:
             continue
-        c.execute('''
+        c.execute(
+            """
             INSERT OR IGNORE INTO channels (title, xml_url, html_url)
             VALUES (?, ?, ?)
-        ''', (title, xml_url, html_url))
+        """,
+            (title, xml_url, html_url),
+        )
     conn.commit()
     conn.close()
     print(f"Imported {len(outlines)} channels from {opml_path}")
 
+
 def fetch_all_feeds(proxy=None):
     conn = get_db()
     c = conn.cursor()
-    c.execute('SELECT id, xml_url FROM channels')
+    c.execute("SELECT id, xml_url FROM channels")
     channels = c.fetchall()
     total_videos = 0
     for channel in channels:
-        channel_id = channel['id']
-        xml_url = channel['xml_url']
+        channel_id = channel["id"]
+        xml_url = channel["xml_url"]
         print(f"Fetching {xml_url}...")
         items = fetch_feed(xml_url, proxy)
         for item in items:
             try:
-                c.execute('''
-                    INSERT OR IGNORE INTO videos (channel_id, title, link, description, pub_date, guid, status, shorts)
+                c.execute(
+                    """
+                    INSERT OR IGNORE INTO videos
+                    (channel_id, title, link, description,
+                     pub_date, guid, status, shorts)
                     VALUES (?, ?, ?, ?, ?, ?, 'new', ?)
-                ''', (channel_id, item['title'], item['link'], item['description'], item['pub_date'], item['guid'], item.get('shorts', 0)))
+                """,
+                    (
+                        channel_id,
+                        item["title"],
+                        item["link"],
+                        item["description"],
+                        item["pub_date"],
+                        item["guid"],
+                        item.get("shorts", 0),
+                    ),
+                )
                 if c.lastrowid:
                     total_videos += 1
             except sqlite3.Error as e:
@@ -153,21 +196,22 @@ def fetch_all_feeds(proxy=None):
     conn.close()
     print(f"Fetched {total_videos} new videos")
 
+
 def list_videos(status=None, limit=None):
     conn = get_db()
     c = conn.cursor()
-    query = '''
+    query = """
         SELECT videos.*, channels.title as channel_title
         FROM videos
         LEFT JOIN channels ON videos.channel_id = channels.id
-    '''
+    """
     params = ()
     if status:
-        query += ' WHERE videos.status = ?'
+        query += " WHERE videos.status = ?"
         params = (status,)
-    query += ' ORDER BY videos.pub_date DESC'
+    query += " ORDER BY videos.pub_date DESC"
     if limit:
-        query += ' LIMIT ?'
+        query += " LIMIT ?"
         params = params + (limit,)
     c.execute(query, params)
     videos = c.fetchall()
@@ -182,14 +226,15 @@ def list_videos(status=None, limit=None):
         print("-" * 80)
     conn.close()
 
+
 def update_status(guid, status):
-    valid_statuses = ['new', 'not_interested', 'viewed', 'todo']
+    valid_statuses = ["new", "not_interested", "viewed", "todo"]
     if status not in valid_statuses:
         print(f"Invalid status {status}. Valid: {valid_statuses}")
         return
     conn = get_db()
     c = conn.cursor()
-    c.execute('UPDATE videos SET status = ? WHERE guid = ?', (status, guid))
+    c.execute("UPDATE videos SET status = ? WHERE guid = ?", (status, guid))
     if c.rowcount == 0:
         print(f"Video with GUID {guid} not found")
     else:
@@ -197,14 +242,15 @@ def update_status(guid, status):
     conn.commit()
     conn.close()
 
+
 def show_stats():
     conn = get_db()
     c = conn.cursor()
-    c.execute('SELECT COUNT(*) FROM channels')
+    c.execute("SELECT COUNT(*) FROM channels")
     total_channels = c.fetchone()[0]
-    c.execute('SELECT COUNT(*) FROM videos')
+    c.execute("SELECT COUNT(*) FROM videos")
     total_videos = c.fetchone()[0]
-    c.execute('SELECT status, COUNT(*) FROM videos GROUP BY status')
+    c.execute("SELECT status, COUNT(*) FROM videos GROUP BY status")
     status_counts = c.fetchall()
     print(f"Total channels: {total_channels}")
     print(f"Total videos: {total_videos}")
@@ -213,42 +259,53 @@ def show_stats():
         print(f"  {row[0]}: {row[1]}")
     conn.close()
 
-def main():
-    parser = argparse.ArgumentParser(description='YouTube OPML Feed Manager with SQLite')
-    subparsers = parser.add_subparsers(dest='command', help='Command to run')
 
-    init_parser = subparsers.add_parser('init', help='Initialize database')
-    import_parser = subparsers.add_parser('import-opml', help='Import OPML file')
-    import_parser.add_argument('opml_file', help='Path to OPML file')
-    fetch_parser = subparsers.add_parser('fetch', help='Fetch feeds from channels')
-    fetch_parser.add_argument('--proxy', default='http://127.0.0.1:8881', help='HTTP proxy (default: http://127.0.0.1:8881)')
-    list_parser = subparsers.add_parser('list', help='List videos')
-    list_parser.add_argument('--status', help='Filter by status (new, not_interested, viewed, todo)')
-    list_parser.add_argument('--limit', type=int, help='Limit number of results')
-    update_parser = subparsers.add_parser('update-status', help='Update video status')
-    update_parser.add_argument('--guid', required=True, help='Video GUID')
-    update_parser.add_argument('--status', required=True, help='New status')
-    stats_parser = subparsers.add_parser('stats', help='Show statistics')
+def main():
+    parser = argparse.ArgumentParser(
+        description="YouTube OPML Feed Manager with SQLite"
+    )
+    subparsers = parser.add_subparsers(dest="command", help="Command to run")
+
+    subparsers.add_parser("init", help="Initialize database")
+    import_parser = subparsers.add_parser("import-opml", help="Import OPML file")
+    import_parser.add_argument("opml_file", help="Path to OPML file")
+    fetch_parser = subparsers.add_parser("fetch", help="Fetch feeds from channels")
+    fetch_parser.add_argument(
+        "--proxy",
+        default="http://127.0.0.1:8881",
+        help="HTTP proxy (default: http://127.0.0.1:8881)",
+    )
+    list_parser = subparsers.add_parser("list", help="List videos")
+    list_parser.add_argument(
+        "--status", help="Filter by status (new, not_interested, viewed, todo)"
+    )
+    list_parser.add_argument("--limit", type=int, help="Limit number of results")
+    update_parser = subparsers.add_parser("update-status", help="Update video status")
+    update_parser.add_argument("--guid", required=True, help="Video GUID")
+    update_parser.add_argument("--status", required=True, help="New status")
+    subparsers.add_parser("stats", help="Show statistics")
 
     args = parser.parse_args()
 
-    if args.command == 'init':
+    if args.command == "init":
         init_db()
         print(f"Initialized database {DB_FILE}")
-    elif args.command == 'import-opml':
+    elif args.command == "import-opml":
         import_opml(args.opml_file)
-    elif args.command == 'fetch':
+    elif args.command == "fetch":
         fetch_all_feeds(args.proxy)
-    elif args.command == 'list':
+    elif args.command == "list":
         list_videos(args.status, args.limit)
-    elif args.command == 'update-status':
+    elif args.command == "update-status":
         update_status(args.guid, args.status)
-    elif args.command == 'stats':
+    elif args.command == "stats":
         show_stats()
     else:
         parser.print_help()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     import signal
+
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     main()

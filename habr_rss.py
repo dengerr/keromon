@@ -3,15 +3,12 @@ import habr_processor
 import rss
 import transform
 
-
 if __name__ == "__main__":
     processor = habr_processor.WeeklyHabrProcessor()
 
     # extract
     articles = [
-        article
-        for url in processor.urls
-        for article in extract.get_habr_articles(url)
+        article for url in processor.urls for article in extract.get_habr_articles(url)
     ]
 
     # load to rss+html std output

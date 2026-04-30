@@ -36,3 +36,9 @@ update_cubic_cookies:
 
 copy_cubic_karak_habr:
 	scp cubic:/var/www/html/buryi.ru/habr_weekly.xml karak:/var/www/mirror.buryi.ru/
+
+lint:
+	uv run ruff check .
+
+format:
+	uv run ruff format .

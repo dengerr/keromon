@@ -1,16 +1,25 @@
+import typing as t
 from abc import abstractmethod
 from datetime import datetime
-import typing as t
-
 
 WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 MONTHS = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
 ]
 
 
-def print_rss2(channel: t.Dict[str, t.Any], items: t.Iterable):
+def print_rss2(channel: dict[str, t.Any], items: t.Iterable):
     current = datetime.now()
     channel = channel.copy()
     channel.update(
@@ -20,8 +29,8 @@ def print_rss2(channel: t.Dict[str, t.Any], items: t.Iterable):
         # managingEditor="editor@example.com",
         # webMaster="webmaster@example.com",
     )
-    if not channel.get('pubDate'):
-        channel['pubDate'] = current
+    if not channel.get("pubDate"):
+        channel["pubDate"] = current
 
     print('<?xml version="1.0"?>')
     print('<rss version="2.0">')
@@ -37,25 +46,21 @@ def print_rss2(channel: t.Dict[str, t.Any], items: t.Iterable):
     print("</rss>")
 
 
-def prepare(value) -> t.Optional[str]:
+def prepare(value) -> str | None:
     if isinstance(value, datetime):
         return _date(value)
     else:
         return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def _date(date) -> t.Optional[str]:
+def _date(date) -> str | None:
     if date is None:
         return None
 
-    return "%s, %02d %s %04d %02d:%02d:%02d GMT" % (
-        WEEKDAYS[date.weekday()],
-        date.day,
-        MONTHS[date.month - 1],
-        date.year,
-        date.hour,
-        date.minute,
-        date.second,
+    return (
+        f"{WEEKDAYS[date.weekday()]}, {date.day:02d} "
+        f"{MONTHS[date.month - 1]} {date.year:04d} "
+        f"{date.hour:02d}:{date.minute:02d}:{date.second:02d} GMT"
     )
 
 
@@ -72,7 +77,7 @@ class RssPrint:
 
     @property
     def url(self) -> str:
-        return self.channel['link']
+        return self.channel["link"]
 
     @property
     def date_str(self) -> str:
@@ -89,13 +94,15 @@ class RssPrint:
 class AllInOneRssPrint(RssPrint):
     def get_items(self, texts) -> list:
         body = "<br/>\n".join(texts)
-        items = [dict(
-            title=self.title,
-            link=self.url,
-            description=body,
-            pubDate=self.dt,
-            guid=self.date_str,
-        )]
+        items = [
+            dict(
+                title=self.title,
+                link=self.url,
+                description=body,
+                pubDate=self.dt,
+                guid=self.date_str,
+            )
+        ]
         return items
 
 
@@ -107,13 +114,15 @@ class GroupedRssPrint(RssPrint):
         for i, mini_texts in enumerate(self._texts_generator(texts)):
             body = "<br/>\n".join(mini_texts)
             if body:
-                items.append(dict(
-                    title=f"{self.title} {i+1}",
-                    link=self.url,
-                    description=body,
-                    pubDate=self.dt,
-                    guid=self.date_str + f'-{i}',
-                ))
+                items.append(
+                    dict(
+                        title=f"{self.title} {i + 1}",
+                        link=self.url,
+                        description=body,
+                        pubDate=self.dt,
+                        guid=self.date_str + f"-{i}",
+                    )
+                )
         return items
 
     def _texts_generator(self, texts):

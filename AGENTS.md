@@ -6,6 +6,9 @@
 - `yt_rss.py`: Generate YouTube subscriptions RSS. Requires `subscriptions` file (see Makefile)
 - `yt_feeds.py`: YouTube OPML feed manager with SQLite. Import OPML, fetch with proxy, track video status (new, not_interested, viewed, todo). Default proxy: `http://127.0.0.1:8881`
   - Commands: `init`, `import-opml <file>`, `fetch [--proxy]`, `list [--status] [--limit]`, `update-status --guid --status`, `stats`
+  - Config: `yt_feeds_config.json` (viewed_file, db_file, proxy)
+- `yt_feeds_web.py`: Web interface for yt_feeds.py. Run: `uv run python yt_feeds_web.py`, opens at http://localhost:5000
+  - Buttons: не смотреть (not_interested), посмотреть (viewed, saves URL to file), отложить (todo)
 - `habr_rss.py`: Generate weekly Habr RSS
 - YouTube workflow: extract cookies → download subscriptions → generate RSS
   - Extract: `./extract_cookies.sh ~/.mozilla/firefox/*default*/cookies.sqlite | grep youtube.com > yt_cookies.txt`

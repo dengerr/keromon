@@ -1,3 +1,6 @@
+start:
+	uv run yt_feeds_web.py
+
 habr_weekly.xml:
 	python3 habr_rss.py > habr_weekly.xml
 

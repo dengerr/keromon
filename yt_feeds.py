@@ -47,10 +47,15 @@ def init_db():
             pub_date TIMESTAMP,
             guid TEXT UNIQUE NOT NULL,
             status TEXT DEFAULT 'new',
+            shorts INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (channel_id) REFERENCES channels(id)
         )
     ''')
+    c.execute("PRAGMA table_info(videos)")
+    columns = [row[1] for row in c.fetchall()]
+    if 'shorts' not in columns:
+        c.execute('ALTER TABLE videos ADD COLUMN shorts INTEGER DEFAULT 0')
     conn.commit()
     conn.close()
 
@@ -70,12 +75,14 @@ def parse_atom_feed(content):
         pub_date_str = entry.find('atom:published', ATOM_NS).text
         pub_date = datetime.fromisoformat(pub_date_str.replace('Z', '+00:00')) if pub_date_str else None
         guid = entry.find('atom:id', ATOM_NS).text
+        is_shorts = 1 if '/shorts/' in link else 0
         items.append({
             'title': title,
             'link': link,
             'description': description,
             'pub_date': pub_date,
             'guid': guid,
+            'shorts': is_shorts,
         })
     return items
 
@@ -135,9 +142,9 @@ def fetch_all_feeds(proxy=None):
         for item in items:
             try:
                 c.execute('''
-                    INSERT OR IGNORE INTO videos (channel_id, title, link, description, pub_date, guid, status)
-                    VALUES (?, ?, ?, ?, ?, ?, 'new')
-                ''', (channel_id, item['title'], item['link'], item['description'], item['pub_date'], item['guid']))
+                    INSERT OR IGNORE INTO videos (channel_id, title, link, description, pub_date, guid, status, shorts)
+                    VALUES (?, ?, ?, ?, ?, ?, 'new', ?)
+                ''', (channel_id, item['title'], item['link'], item['description'], item['pub_date'], item['guid'], item.get('shorts', 0)))
                 if c.lastrowid:
                     total_videos += 1
             except sqlite3.Error as e:
@@ -170,6 +177,7 @@ def list_videos(status=None, limit=None):
         print(f"Channel: {v['channel_title']}")
         print(f"Link: {v['link']}")
         print(f"Status: {v['status']}")
+        print(f"Shorts: {bool(v['shorts'])}")
         print(f"Published: {v['pub_date']}")
         print("-" * 80)
     conn.close()

@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template_string, request
+from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
 
@@ -97,6 +97,7 @@ def index():
 <head>
 <title>YT Feeds</title>
 <meta charset="utf-8">
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
 <style>
 body {
     font-family: monospace;
@@ -221,71 +222,72 @@ a:hover { text-decoration: underline; }
                 Published: {{ v.pub_date }}
                 <span class="status {{ v.status }}">{{ v.status }}</span>
             </div>
-            <div class="buttons">
-                <button class="btn-not-interested"
-                    onclick="updateStatus('{{ v.guid }}', 'not_interested', this)">
-                    не смотреть
-                </button>
-                <button class="btn-viewed"
-                    onclick="updateStatus('{{ v.guid }}', 'viewed', this)">
-                    посмотреть
-                </button>
-                <button class="btn-todo"
-                    onclick="updateStatus('{{ v.guid }}', 'todo', this)">
-                    отложить
-                </button>
-            </div>
+        <div class="buttons">
+            <button class="btn-not-interested"
+                hx-post="/api/update-status"
+                hx-vals='{"guid": "{{ v.guid }}", "status": "not_interested"}'
+                hx-target="closest .video"
+                hx-swap="outerHTML swap:0.1s">
+                не смотреть
+            </button>
+            <button class="btn-viewed"
+                hx-post="/api/update-status"
+                hx-vals='{"guid": "{{ v.guid }}", "status": "viewed"}'
+                hx-target="closest .video"
+                hx-swap="outerHTML swap:0.1s">
+                посмотреть
+            </button>
+            <button class="btn-todo"
+                hx-post="/api/update-status"
+                hx-vals='{"guid": "{{ v.guid }}", "status": "todo"}'
+                hx-target="closest .video"
+                hx-swap="outerHTML swap:0.1s">
+                отложить
+            </button>
         </div>
-        {% endfor %}
     </div>
-    <div class="column">
-        <h2>Shorts</h2>
-        {% for v in shorts_videos %}
-        <div class="video {{ v.status }}">
-            <div class="title">
-                <a href="{{ v.link }}" target="_blank">{{ v.title }}</a>
-            </div>
-            <div class="meta">
-                Channel: {{ v.channel_title }} |
-                Published: {{ v.pub_date }}
-                <span class="status {{ v.status }}">{{ v.status }}</span>
-            </div>
-            <div class="buttons">
-                <button class="btn-not-interested"
-                    onclick="updateStatus('{{ v.guid }}', 'not_interested', this)">
-                    не смотреть
-                </button>
-                <button class="btn-viewed"
-                    onclick="updateStatus('{{ v.guid }}', 'viewed', this)">
-                    посмотреть
-                </button>
-                <button class="btn-todo"
-                    onclick="updateStatus('{{ v.guid }}', 'todo', this)">
-                    отложить
-                </button>
-            </div>
+    {% endfor %}
+</div>
+<div class="column">
+    <h2>Shorts</h2>
+    {% for v in shorts_videos %}
+    <div class="video {{ v.status }}">
+        <div class="title">
+            <a href="{{ v.link }}" target="_blank">{{ v.title }}</a>
         </div>
-        {% endfor %}
+        <div class="meta">
+            Channel: {{ v.channel_title }} |
+            Published: {{ v.pub_date }}
+            <span class="status {{ v.status }}">{{ v.status }}</span>
+        </div>
+        <div class="buttons">
+            <button class="btn-not-interested"
+                hx-post="/api/update-status"
+                hx-vals='{"guid": "{{ v.guid }}", "status": "not_interested"}'
+                hx-target="closest .video"
+                hx-swap="outerHTML swap:0.1s">
+                не смотреть
+            </button>
+            <button class="btn-viewed"
+                hx-post="/api/update-status"
+                hx-vals='{"guid": "{{ v.guid }}", "status": "viewed"}'
+                hx-target="closest .video"
+                hx-swap="outerHTML swap:0.1s">
+                посмотреть
+            </button>
+            <button class="btn-todo"
+                hx-post="/api/update-status"
+                hx-vals='{"guid": "{{ v.guid }}", "status": "todo"}'
+                hx-target="closest .video"
+                hx-swap="outerHTML swap:0.1s">
+                отложить
+            </button>
+        </div>
+    </div>
+    {% endfor %}
     </div>
 </div>
 
-<script>
-function updateStatus(guid, status, btn) {
-    fetch('/api/update-status', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({guid: guid, status: status})
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Error: ' + data.error);
-        }
-    });
-}
-</script>
 </body>
 </html>
 """
@@ -300,13 +302,12 @@ function updateStatus(guid, status, btn) {
 
 @app.route("/api/update-status", methods=["POST"])
 def api_update_status():
-    data = request.json
-    guid = data.get("guid")
-    status = data.get("status")
+    guid = request.form.get("guid") or request.json.get("guid")
+    status = request.form.get("status") or request.json.get("status")
 
     valid_statuses = ["new", "not_interested", "viewed", "todo"]
     if status not in valid_statuses:
-        return jsonify({"success": False, "error": "Invalid status"}), 400
+        return "Invalid status", 400
 
     conn = get_db()
     c = conn.cursor()
@@ -322,7 +323,7 @@ def api_update_status():
     conn.commit()
     conn.close()
 
-    return jsonify({"success": True})
+    return "", 200
 
 
 if __name__ == "__main__":

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>YT Feeds</title>
+<meta charset="utf-8">
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<style>
+body {
+    font-family: monospace;
+    margin: 20px;
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+.video {
+    border: 1px solid #444;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    background: #2a2a2a;
+}
+.video.new { border-left: 4px solid #4CAF50; }
+.video.not_interested { border-left: 4px solid #f44336; }
+.video.viewed { border-left: 4px solid #2196F3; }
+.video.todo { border-left: 4px solid #FF9800; }
+.title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.meta {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 10px;
+}
+.buttons { margin-top: 10px; }
+button {
+    padding: 8px 16px;
+    margin-right: 10px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.btn-not-interested { background: #f44336; color: white; }
+.btn-viewed { background: #2196F3; color: white; }
+.btn-todo { background: #FF9800; color: white; }
+button:hover { opacity: 0.8; }
+.status {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    margin-left: 10px;
+}
+.status.new { background: #4CAF50; color: white; }
+.status.not_interested { background: #f44336; color: white; }
+.status.viewed { background: #2196F3; color: white; }
+.status.todo { background: #FF9800; color: white; }
+a { color: #64B5F6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.filters {
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+.filters a {
+    margin-right: 10px;
+    padding: 5px 10px;
+    border-radius: 3px;
+}
+.filters a.active {
+    background: #2196F3;
+    color: white;
+    font-weight: bold;
+}
+.container {
+    display: flex;
+    gap: 20px;
+}
+.column {
+    flex: 1;
+}
+.column h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #aaa;
+}
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+}
+</style>
+</head>
+<body>
+<h1>YT Feeds - Recent Videos</h1>
+<div class="filters">
+    <a href="/?status=all"
+        class="{{ 'active' if status_filter == 'all' else '' }}">
+        Все
+    </a> |
+    <a href="/?status=new"
+        class="{{ 'active' if status_filter == 'new' or not status_filter else '' }}">
+        New
+    </a> |
+    <a href="/?status=not_interested"
+        class="{{ 'active' if status_filter == 'not_interested' else '' }}">
+        Не смотреть
+    </a> |
+    <a href="/?status=viewed"
+        class="{{ 'active' if status_filter == 'viewed' else '' }}">
+        Посмотрел
+    </a> |
+    <a href="/?status=todo"
+        class="{{ 'active' if status_filter == 'todo' else '' }}">
+        Отложить
+    </a>
+</div>
+<div class="container">
+    <div class="column">
+        <h2>Videos</h2>
+        {% for v in regular_videos %}
+        {{ v.html|safe }}
+        {% endfor %}
+    </div>
+    <div class="column">
+        <h2>Shorts</h2>
+        {% for v in shorts_videos %}
+        {{ v.html|safe }}
+        {% endfor %}
+    </div>
+</div>
+
+</body>
+</html>

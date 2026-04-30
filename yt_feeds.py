@@ -3,15 +3,17 @@ import html
 import sqlite3
 import sys
 import xml.etree.ElementTree as ET
+from contextlib import contextmanager
 from datetime import datetime
+from urllib.parse import parse_qs, urlparse
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from urllib.parse import urlparse, parse_qs
 
 ATOM_NS = {"atom": "http://www.w3.org/2005/Atom"}
 DB_FILE = "feeds.db"
+VALID_STATUSES = ["new", "not_interested", "viewed", "todo"]
 
 
 def adapt_datetime(val):
@@ -32,39 +34,47 @@ def get_db():
     return conn
 
 
-def init_db():
+@contextmanager
+def db_connection():
     conn = get_db()
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS channels (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            xml_url TEXT UNIQUE NOT NULL,
-            html_url TEXT,
-            imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS videos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            channel_id INTEGER NOT NULL,
-            title TEXT NOT NULL,
-            link TEXT NOT NULL,
-            description TEXT,
-            pub_date TIMESTAMP,
-            guid TEXT UNIQUE NOT NULL,
-            status TEXT DEFAULT 'new',
-            shorts INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (channel_id) REFERENCES channels(id)
-        )
-    """)
-    c.execute("PRAGMA table_info(videos)")
-    columns = [row[1] for row in c.fetchall()]
-    if "shorts" not in columns:
-        c.execute("ALTER TABLE videos ADD COLUMN shorts INTEGER DEFAULT 0")
-    conn.commit()
-    conn.close()
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+def init_db():
+    with db_connection() as conn:
+        c = conn.cursor()
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS channels (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                xml_url TEXT UNIQUE NOT NULL,
+                html_url TEXT,
+                imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS videos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                channel_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                link TEXT NOT NULL,
+                description TEXT,
+                pub_date TIMESTAMP,
+                guid TEXT UNIQUE NOT NULL,
+                status TEXT DEFAULT 'new',
+                shorts INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (channel_id) REFERENCES channels(id)
+            )
+        """)
+        c.execute("PRAGMA table_info(videos)")
+        columns = [row[1] for row in c.fetchall()]
+        if "shorts" not in columns:
+            c.execute("ALTER TABLE videos ADD COLUMN shorts INTEGER DEFAULT 0")
+        conn.commit()
 
 
 def parse_atom_feed(content):
@@ -137,167 +147,169 @@ def fetch_feed(url, proxy=None):
 
 
 def import_opml(opml_path):
-    conn = get_db()
-    c = conn.cursor()
-    tree = ET.parse(opml_path)
-    root = tree.getroot()
-    outlines = root.findall('.//outline[@type="rss"]')
-    for outline in outlines:
-        title = outline.get("title") or outline.get("text")
-        xml_url = outline.get("xmlUrl")
-        html_url = outline.get("htmlUrl")
-        if not xml_url:
-            continue
-        c.execute(
-            """
-            INSERT OR IGNORE INTO channels (title, xml_url, html_url)
-            VALUES (?, ?, ?)
-        """,
-            (title, xml_url, html_url),
-        )
-    conn.commit()
-    conn.close()
+    with db_connection() as conn:
+        c = conn.cursor()
+        tree = ET.parse(opml_path)
+        root = tree.getroot()
+        outlines = root.findall('.//outline[@type="rss"]')
+        for outline in outlines:
+            title = outline.get("title") or outline.get("text")
+            xml_url = outline.get("xmlUrl")
+            html_url = outline.get("htmlUrl")
+            if not xml_url:
+                continue
+            c.execute(
+                """
+                INSERT OR IGNORE INTO channels (title, xml_url, html_url)
+                VALUES (?, ?, ?)
+            """,
+                (title, xml_url, html_url),
+            )
+        conn.commit()
     print(f"Imported {len(outlines)} channels from {opml_path}")
 
 
 def fetch_all_feeds(proxy=None, all_channels=False):
-    conn = get_db()
-    c = conn.cursor()
-    if all_channels:
-        c.execute("SELECT id, xml_url FROM channels")
-    else:
-        c.execute("""
-            SELECT DISTINCT c.id, c.xml_url
-            FROM channels c
-            INNER JOIN videos v ON c.id = v.channel_id
-            WHERE v.pub_date >= datetime('now', '-30 days')
-        """)
-    channels = c.fetchall()
-    total_videos = 0
-    for channel in channels:
-        channel_id = channel["id"]
-        xml_url = channel["xml_url"]
-        print(f"Fetching {xml_url}...")
-        items = fetch_feed(xml_url, proxy)
-        for item in items:
-            try:
-                c.execute(
-                    """
-                    INSERT OR IGNORE INTO videos
-                    (channel_id, title, link, description,
-                     pub_date, guid, status, shorts)
-                    VALUES (?, ?, ?, ?, ?, ?, 'new', ?)
-                """,
-                    (
-                        channel_id,
-                        item["title"],
-                        item["link"],
-                        item["description"],
-                        item["pub_date"],
-                        item["guid"],
-                        item.get("shorts", 0),
-                    ),
-                )
-                if c.lastrowid:
-                    total_videos += 1
-            except sqlite3.Error as e:
-                print(f"Error inserting video {item['guid']}: {e}")
-    conn.commit()
-    conn.close()
+    with db_connection() as conn:
+        c = conn.cursor()
+        if all_channels:
+            c.execute("SELECT id, xml_url FROM channels")
+        else:
+            c.execute("""
+                SELECT DISTINCT c.id, c.xml_url
+                FROM channels c
+                INNER JOIN videos v ON c.id = v.channel_id
+                WHERE v.pub_date >= datetime('now', '-30 days')
+            """)
+        channels = c.fetchall()
+        total_videos = 0
+        for channel in channels:
+            channel_id = channel["id"]
+            xml_url = channel["xml_url"]
+            print(f"Fetching {xml_url}...")
+            items = fetch_feed(xml_url, proxy)
+            for item in items:
+                try:
+                    c.execute(
+                        """
+                        INSERT OR IGNORE INTO videos
+                        (channel_id, title, link, description,
+                         pub_date, guid, status, shorts)
+                        VALUES (?, ?, ?, ?, ?, ?, 'new', ?)
+                    """,
+                        (
+                            channel_id,
+                            item["title"],
+                            item["link"],
+                            item["description"],
+                            item["pub_date"],
+                            item["guid"],
+                            item.get("shorts", 0),
+                        ),
+                    )
+                    if c.lastrowid:
+                        total_videos += 1
+                except sqlite3.Error as e:
+                    print(f"Error inserting video {item['guid']}: {e}")
+        conn.commit()
     print(f"Fetched {total_videos} new videos")
 
 
 def list_videos(status=None, limit=None):
-    conn = get_db()
-    c = conn.cursor()
-    query = """
-        SELECT videos.*, channels.title as channel_title
-        FROM videos
-        LEFT JOIN channels ON videos.channel_id = channels.id
-    """
-    params = ()
-    if status:
-        query += " WHERE videos.status = ?"
-        params = (status,)
-    query += " ORDER BY videos.pub_date DESC"
-    if limit:
-        query += " LIMIT ?"
-        params = params + (limit,)
-    c.execute(query, params)
-    videos = c.fetchall()
-    for v in videos:
-        print(f"GUID: {v['guid']}")
-        print(f"Title: {v['title']}")
-        print(f"Channel: {v['channel_title']}")
-        print(f"Link: {v['link']}")
-        print(f"Status: {v['status']}")
-        print(f"Shorts: {bool(v['shorts'])}")
-        print(f"Published: {v['pub_date']}")
-        print("-" * 80)
-    conn.close()
+    with db_connection() as conn:
+        c = conn.cursor()
+        query = """
+            SELECT videos.*, channels.title as channel_title
+            FROM videos
+            LEFT JOIN channels ON videos.channel_id = channels.id
+        """
+        params = ()
+        if status:
+            query += " WHERE videos.status = ?"
+            params = (status,)
+        query += " ORDER BY videos.pub_date DESC"
+        if limit:
+            query += " LIMIT ?"
+            params = params + (limit,)
+        c.execute(query, params)
+        videos = c.fetchall()
+        for v in videos:
+            print(f"GUID: {v['guid']}")
+            print(f"Title: {v['title']}")
+            print(f"Channel: {v['channel_title']}")
+            print(f"Link: {v['link']}")
+            print(f"Status: {v['status']}")
+            print(f"Shorts: {bool(v['shorts'])}")
+            print(f"Published: {v['pub_date']}")
+            print("-" * 80)
 
 
 def update_status(guid, status):
-    valid_statuses = ["new", "not_interested", "viewed", "todo"]
-    if status not in valid_statuses:
-        print(f"Invalid status {status}. Valid: {valid_statuses}")
+    if status not in VALID_STATUSES:
+        print(f"Invalid status {status}. Valid: {VALID_STATUSES}")
         return
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("UPDATE videos SET status = ? WHERE guid = ?", (status, guid))
-    if c.rowcount == 0:
-        print(f"Video with GUID {guid} not found")
-    else:
-        print(f"Updated status of {guid} to {status}")
-    conn.commit()
-    conn.close()
+    with db_connection() as conn:
+        c = conn.cursor()
+        c.execute("UPDATE videos SET status = ? WHERE guid = ?", (status, guid))
+        if c.rowcount == 0:
+            print(f"Video with GUID {guid} not found")
+        else:
+            print(f"Updated status of {guid} to {status}")
+        conn.commit()
 
 
 def show_stats():
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM channels")
-    total_channels = c.fetchone()[0]
-    c.execute("SELECT COUNT(*) FROM videos")
-    total_videos = c.fetchone()[0]
-    c.execute("SELECT status, COUNT(*) FROM videos GROUP BY status")
-    status_counts = c.fetchall()
-    print(f"Total channels: {total_channels}")
-    print(f"Total videos: {total_videos}")
-    print("Status counts:")
-    for row in status_counts:
-        print(f"  {row[0]}: {row[1]}")
-    conn.close()
+    with db_connection() as conn:
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM channels")
+        total_channels = c.fetchone()[0]
+        c.execute("SELECT COUNT(*) FROM videos")
+        total_videos = c.fetchone()[0]
+        c.execute("SELECT status, COUNT(*) FROM videos GROUP BY status")
+        status_counts = c.fetchall()
+        print(f"Total channels: {total_channels}")
+        print(f"Total videos: {total_videos}")
+        print("Status counts:")
+        for row in status_counts:
+            print(f"  {row[0]}: {row[1]}")
 
 
 def show_channel_stats():
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("""
-        SELECT
-            c.title,
-            COUNT(v.id) as total_videos,
-            SUM(CASE WHEN v.status = 'new' THEN 1 ELSE 0 END) as new_count,
-            SUM(CASE WHEN v.status = 'not_interested' THEN 1 ELSE 0 END) as not_interested_count,
-            SUM(CASE WHEN v.status = 'viewed' THEN 1 ELSE 0 END) as viewed_count,
-            SUM(CASE WHEN v.status = 'todo' THEN 1 ELSE 0 END) as todo_count,
-            MAX(v.pub_date) as last_video_date
-        FROM channels c
-        LEFT JOIN videos v ON c.id = v.channel_id
-        GROUP BY c.id, c.title
-        ORDER BY last_video_date DESC
-    """)
-    channels = c.fetchall()
-    if not channels:
-        print("No channels found")
-        conn.close()
-        return
-    for ch in channels:
-        print(f"Channel: {ch['title']}")
-        print(f"  Total: {ch['total_videos']}, new={ch['new_count']}, not_interested={ch['not_interested_count']}, viewed={ch['viewed_count']}, todo={ch['todo_count']}")
-        print(f"  Last: {ch['last_video_date']}")
-        print()
-    conn.close()
+    with db_connection() as conn:
+        c = conn.cursor()
+        c.execute("""
+            SELECT
+                c.title,
+                COUNT(v.id) as total_videos,
+                SUM(CASE WHEN v.status = 'new' THEN 1 ELSE 0 END)
+                    as new_count,
+                SUM(CASE WHEN v.status = 'not_interested' THEN 1 ELSE 0 END)
+                    as not_interested_count,
+                SUM(CASE WHEN v.status = 'viewed' THEN 1 ELSE 0 END)
+                    as viewed_count,
+                SUM(CASE WHEN v.status = 'todo' THEN 1 ELSE 0 END)
+                    as todo_count,
+                MAX(v.pub_date) as last_video_date
+            FROM channels c
+            LEFT JOIN videos v ON c.id = v.channel_id
+            GROUP BY c.id, c.title
+            ORDER BY last_video_date DESC
+        """)
+        channels = c.fetchall()
+        if not channels:
+            print("No channels found")
+            return
+        for ch in channels:
+            print(f"Channel: {ch['title']}")
+            print(
+                f"  Total: {ch['total_videos']}, "
+                f"new={ch['new_count']}, "
+                f"not_interested={ch['not_interested_count']}, "
+                f"viewed={ch['viewed_count']}, "
+                f"todo={ch['todo_count']}"
+            )
+            print(f"  Last: {ch['last_video_date']}")
+            print()
 
 
 def extract_video_id(url_or_id):
@@ -317,19 +329,18 @@ def extract_video_id(url_or_id):
 
 
 def mark_viewed_from_stdin():
-    conn = get_db()
-    c = conn.cursor()
-    updated = 0
-    for line in sys.stdin:
-        video_id = extract_video_id(line)
-        if not video_id:
-            continue
-        guid = f"yt:video:{video_id}"
-        c.execute("UPDATE videos SET status = 'viewed' WHERE guid = ?", (guid,))
-        if c.rowcount:
-            updated += 1
-    conn.commit()
-    conn.close()
+    with db_connection() as conn:
+        c = conn.cursor()
+        updated = 0
+        for line in sys.stdin:
+            video_id = extract_video_id(line)
+            if not video_id:
+                continue
+            guid = f"yt:video:{video_id}"
+            c.execute("UPDATE videos SET status = 'viewed' WHERE guid = ?", (guid,))
+            if c.rowcount:
+                updated += 1
+        conn.commit()
     print(f"Updated {updated} videos to viewed")
 
 
@@ -351,7 +362,10 @@ def main():
     fetch_parser.add_argument(
         "--all",
         action="store_true",
-        help="Fetch from all channels (default: only channels with videos in last 30 days)",
+        help=(
+            "Fetch from all channels "
+            "(default: only channels with videos in last 30 days)"
+        ),
     )
     list_parser = subparsers.add_parser("list", help="List videos")
     list_parser.add_argument(

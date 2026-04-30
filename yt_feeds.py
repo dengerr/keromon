@@ -1,12 +1,14 @@
 import argparse
 import html
 import sqlite3
+import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from urllib.parse import urlparse, parse_qs
 
 ATOM_NS = {"atom": "http://www.w3.org/2005/Atom"}
 DB_FILE = "feeds.db"
@@ -260,6 +262,39 @@ def show_stats():
     conn.close()
 
 
+def extract_video_id(url_or_id):
+    url_or_id = url_or_id.strip()
+    if url_or_id.startswith("yt:video:"):
+        return url_or_id.split(":", 2)[2]
+    parsed = urlparse(url_or_id)
+    if parsed.netloc == "youtu.be":
+        return parsed.path.lstrip("/")
+    if "youtube" in (parsed.netloc or ""):
+        if parsed.path.startswith("/shorts/"):
+            return parsed.path.split("/")[-1]
+        qs = parse_qs(parsed.query)
+        if "v" in qs:
+            return qs["v"][0]
+    return url_or_id
+
+
+def mark_viewed_from_stdin():
+    conn = get_db()
+    c = conn.cursor()
+    updated = 0
+    for line in sys.stdin:
+        video_id = extract_video_id(line)
+        if not video_id:
+            continue
+        guid = f"yt:video:{video_id}"
+        c.execute("UPDATE videos SET status = 'viewed' WHERE guid = ?", (guid,))
+        if c.rowcount:
+            updated += 1
+    conn.commit()
+    conn.close()
+    print(f"Updated {updated} videos to viewed")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="YouTube OPML Feed Manager with SQLite"
@@ -284,6 +319,7 @@ def main():
     update_parser.add_argument("--guid", required=True, help="Video GUID")
     update_parser.add_argument("--status", required=True, help="New status")
     subparsers.add_parser("stats", help="Show statistics")
+    subparsers.add_parser("mark-viewed", help="Mark videos as viewed from stdin URLs")
 
     args = parser.parse_args()
 
@@ -300,6 +336,8 @@ def main():
         update_status(args.guid, args.status)
     elif args.command == "stats":
         show_stats()
+    elif args.command == "mark-viewed":
+        mark_viewed_from_stdin()
     else:
         parser.print_help()
 

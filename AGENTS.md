@@ -4,6 +4,8 @@
 - No tests, lint, or typecheck configured
 - `scrap.py`: Email top Habr articles. Needs `email.ini` (copy from `email-example.ini`). Args: `daily`, `weekly`, `print`
 - `yt_rss.py`: Generate YouTube subscriptions RSS. Requires `subscriptions` file (see Makefile)
+- `yt_feeds.py`: YouTube OPML feed manager with SQLite. Import OPML, fetch with proxy, track video status (new, not_interested, viewed, todo). Default proxy: `http://127.0.0.1:8881`
+  - Commands: `init`, `import-opml <file>`, `fetch [--proxy]`, `list [--status] [--limit]`, `update-status --guid --status`, `stats`
 - `habr_rss.py`: Generate weekly Habr RSS
 - YouTube workflow: extract cookies → download subscriptions → generate RSS
   - Extract: `./extract_cookies.sh ~/.mozilla/firefox/*default*/cookies.sqlite | grep youtube.com > yt_cookies.txt`

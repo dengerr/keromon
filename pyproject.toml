@@ -8,6 +8,13 @@ dependencies = [
     "beautifulsoup4==4.10.0",
     "lxml>=6.0.0",
     "requests==2.27.1",
+    "six>=1.17.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.12",
+    "pytest>=9.0.3",
 ]
 
 [tool.ruff]
@@ -16,7 +23,6 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
 
-[dependency-groups]
-dev = [
-    "ruff>=0.15.12",
-]
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

@@ -49,8 +49,9 @@ def print_rss2(channel: dict[str, t.Any], items: t.Iterable):
 def prepare(value) -> str | None:
     if isinstance(value, datetime):
         return _date(value)
-    else:
+    elif isinstance(value, str):
         return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return value
 
 
 def _date(date) -> str | None:

@@ -1,7 +1,7 @@
 # AGENTS.md
 
 - Python 3.12, flat script repo (no src package)
-- Lint: `uv run ruff check .`, Format: `uv run ruff format .`
+- Lint: `uv run ruff check .`, Format: `uv run ruff format .`, Test: `uv run pytest -v`
 - `scrap.py`: Email top Habr articles. Needs `email.ini` (copy from `email-example.ini`). Args: `daily`, `weekly`, `print`
 - `yt_rss.py`: Generate YouTube subscriptions RSS. Requires `subscriptions` file (see Makefile)
 - `yt_feeds.py`: YouTube OPML feed manager with SQLite. Import OPML, fetch with proxy, track video status (new, not_interested, viewed, todo). Default proxy: `http://127.0.0.1:8881`

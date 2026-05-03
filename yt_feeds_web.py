@@ -70,10 +70,10 @@ def video_card_html(v):
     return f"""
 <div class="video {v["status"]}">
     <div class="title">
+        {v["channel_title"]} <br>
         <a href="{v["link"]}" target="_blank">{v["title"]}</a>
     </div>
     <div class="meta">
-        Channel: {v["channel_title"]} |
         Published: {v["pub_date"]}
         <span class="status {v["status"]}">{v["status"]}</span>
     </div>

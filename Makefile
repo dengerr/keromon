@@ -4,6 +4,9 @@ start:
 fetch:
 	uv run yt_feeds.py fetch
 
+all:
+	uv run yt_feeds.py fetch --all
+
 habr_weekly.xml:
 	python3 habr_rss.py > habr_weekly.xml
 

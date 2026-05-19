@@ -28,6 +28,7 @@ sqlite3.register_converter("TIMESTAMP", convert_datetime)
 
 CONFIG_FILE = Path(__file__).parent / "yt_feeds_config.json"
 TEMPLATE_FILE = Path(__file__).parent / "yt_feeds_template.html"
+CHANNELS_TEMPLATE_FILE = Path(__file__).parent / "yt_channels_template.html"
 
 if CONFIG_FILE.exists():
     with open(CONFIG_FILE) as f:
@@ -178,6 +179,66 @@ def api_update_status():
         conn.commit()
 
     return "", 200
+
+
+@app.route("/channels")
+def channels():
+    with db_connection() as conn:
+        c = conn.cursor()
+        c.execute("SELECT id, title FROM channels ORDER BY title")
+        all_channels = c.fetchall()
+
+    return render_template_string(
+        open(CHANNELS_TEMPLATE_FILE).read(),
+        channels=all_channels,
+        active_channel_id=None,
+    )
+
+
+@app.route("/api/channel/<int:channel_id>/videos")
+def channel_videos(channel_id):
+    with db_connection() as conn:
+        c = conn.cursor()
+        c.execute(
+            """
+            SELECT videos.*, channels.title as channel_title
+            FROM videos
+            LEFT JOIN channels ON videos.channel_id = channels.id
+            WHERE videos.channel_id = ?
+            ORDER BY videos.pub_date DESC
+        """,
+            (channel_id,),
+        )
+        videos = c.fetchall()
+
+    videos_data = []
+    for v in videos:
+        video_dict = {
+            "guid": v["guid"],
+            "title": v["title"],
+            "channel_title": v["channel_title"],
+            "link": v["link"],
+            "status": v["status"],
+            "shorts": bool(v["shorts"]),
+            "pub_date": str(v["pub_date"]),
+        }
+        video_dict["html"] = video_card_html(video_dict)
+        videos_data.append(video_dict)
+
+    regular_videos = [v for v in videos_data if not v["shorts"]]
+    shorts_videos = [v for v in videos_data if v["shorts"]]
+
+    html = '<div class="container">'
+    html += '<div class="column"><h2>Videos</h2>'
+    for v in regular_videos:
+        html += v["html"]
+    html += "</div>"
+    html += '<div class="column"><h2>Shorts</h2>'
+    for v in shorts_videos:
+        html += v["html"]
+    html += "</div></div>"
+
+    return html
 
 
 if __name__ == "__main__":

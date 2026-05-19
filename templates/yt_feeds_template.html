@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>YT Feeds</title>
+<meta charset="utf-8">
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<h1>YT Feeds - Recent Videos</h1>
+<div class="filters">
+    <a href="/?status=all"
+        class="{{ 'active' if status_filter == 'all' else '' }}">
+        Все
+    </a> |
+    <a href="/?status=new"
+        class="{{ 'active' if status_filter == 'new' or not status_filter else '' }}">
+        New
+    </a> |
+    <a href="/?status=not_interested"
+        class="{{ 'active' if status_filter == 'not_interested' else '' }}">
+        Не смотреть
+    </a> |
+    <a href="/?status=viewed"
+        class="{{ 'active' if status_filter == 'viewed' else '' }}">
+        Посмотрел
+    </a> |
+    <a href="/?status=todo"
+        class="{{ 'active' if status_filter == 'todo' else '' }}">
+        Отложить
+    </a>
+    <a href="/channels">Channels</a>
+</div>
+<div class="container">
+    <div class="column">
+        <h2>Videos</h2>
+        {% for v in regular_videos %}
+        {{ v.html|safe }}
+        {% endfor %}
+    </div>
+    <div class="column">
+        <h2>Shorts</h2>
+        {% for v in shorts_videos %}
+        {{ v.html|safe }}
+        {% endfor %}
+    </div>
+</div>
+
+</body>
+</html>

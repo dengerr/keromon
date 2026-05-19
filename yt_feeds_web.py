@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
-from flask import Flask, render_template_string, request
+from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
@@ -27,8 +27,6 @@ sqlite3.register_adapter(datetime, adapt_datetime)
 sqlite3.register_converter("TIMESTAMP", convert_datetime)
 
 CONFIG_FILE = Path(__file__).parent / "yt_feeds_config.json"
-TEMPLATE_FILE = Path(__file__).parent / "yt_feeds_template.html"
-CHANNELS_TEMPLATE_FILE = Path(__file__).parent / "yt_channels_template.html"
 
 if CONFIG_FILE.exists():
     with open(CONFIG_FILE) as f:
@@ -59,11 +57,6 @@ def db_connection():
         yield conn
     finally:
         conn.close()
-
-
-def load_template():
-    with open(TEMPLATE_FILE) as f:
-        return f.read()
 
 
 def video_card_html(v):
@@ -150,8 +143,8 @@ def index():
     regular_videos = [v for v in videos_data if not v["shorts"]]
     shorts_videos = [v for v in videos_data if v["shorts"]]
 
-    return render_template_string(
-        load_template(),
+    return render_template(
+        "yt_feeds_template.html",
         regular_videos=regular_videos,
         shorts_videos=shorts_videos,
         status_filter=status_filter,
@@ -188,8 +181,8 @@ def channels():
         c.execute("SELECT id, title FROM channels ORDER BY title")
         all_channels = c.fetchall()
 
-    return render_template_string(
-        open(CHANNELS_TEMPLATE_FILE).read(),
+    return render_template(
+        "yt_channels_template.html",
         channels=all_channels,
         active_channel_id=None,
     )

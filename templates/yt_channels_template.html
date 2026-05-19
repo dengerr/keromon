@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>YT Feeds - Channels</title>
+<meta charset="utf-8">
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<h1>YT Feeds - Channels</h1>
+<div class="filters">
+    <a href="/?status=all">Все</a> |
+    <a href="/?status=new">New</a> |
+    <a href="/?status=not_interested">Не смотреть</a> |
+    <a href="/?status=viewed">Посмотрел</a> |
+    <a href="/?status=todo">Отложить</a>
+    <a href="/channels" class="active"><strong>Channels</strong></a>
+</div>
+<div class="channels-layout">
+    <div class="sidebar">
+        <h2>Channels</h2>
+        {% for ch in channels %}
+        <a href="#"
+           class="channel-item"
+           hx-get="/api/channel/{{ ch.id }}/videos"
+           hx-target="#channel-videos"
+           hx-swap="innerHTML"
+           hx-indicator="#loading">
+            {{ ch.title }}
+        </a>
+        {% endfor %}
+    </div>
+    <div class="content" id="channel-videos">
+        <span id="loading" style="color:#999;">Select a channel on the left</span>
+    </div>
+</div>
+</body>
+</html>

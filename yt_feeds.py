@@ -207,7 +207,7 @@ def fetch_all_feeds(proxy=None, all_channels=False):
                             item.get("shorts", 0),
                         ),
                     )
-                    if c.lastrowid:
+                    if c.rowcount:
                         total_videos += 1
                 except sqlite3.Error as e:
                     print(f"Error inserting video {item['guid']}: {e}")

@@ -120,6 +120,18 @@ def parse_atom_feed(content):
     return items
 
 
+def parse_atom_channel(content):
+    root = ET.fromstring(content)
+    title_elem = root.find("atom:title", ATOM_NS)
+    title = title_elem.text if title_elem is not None else "Unknown"
+    html_url = ""
+    for link_elem in root.findall("atom:link", ATOM_NS):
+        if link_elem.get("rel") in ("alternate", None) and link_elem.get("href"):
+            html_url = link_elem.get("href")
+            break
+    return title, html_url
+
+
 def get_session(proxy=None):
     session = requests.Session()
     retries = Retry(
@@ -167,6 +179,27 @@ def import_opml(opml_path):
             )
         conn.commit()
     print(f"Imported {len(outlines)} channels from {opml_path}")
+
+
+def import_url(rss_url, proxy=None):
+    try:
+        session = get_session(proxy)
+        resp = session.get(
+            rss_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=30
+        )
+        resp.raise_for_status()
+        title, html_url = parse_atom_channel(resp.text)
+        with db_connection() as conn:
+            c = conn.cursor()
+            c.execute(
+                "INSERT OR IGNORE INTO channels (title, xml_url, html_url) "
+                "VALUES (?, ?, ?)",
+                (title, rss_url, html_url),
+            )
+            conn.commit()
+        print(f"Imported channel: {title} ({rss_url})")
+    except Exception as e:
+        print(f"Error importing {rss_url}: {e}")
 
 
 def fetch_all_feeds(proxy=None, all_channels=False):
@@ -353,6 +386,15 @@ def main():
     subparsers.add_parser("init", help="Initialize database")
     import_parser = subparsers.add_parser("import-opml", help="Import OPML file")
     import_parser.add_argument("opml_file", help="Path to OPML file")
+    import_url_parser = subparsers.add_parser(
+        "import-url", help="Import RSS/Atom URL"
+    )
+    import_url_parser.add_argument("url", help="RSS/Atom feed URL")
+    import_url_parser.add_argument(
+        "--proxy",
+        default=None,
+        help="HTTP proxy (default: no proxy)",
+    )
     fetch_parser = subparsers.add_parser("fetch", help="Fetch feeds from channels")
     fetch_parser.add_argument(
         "--proxy",
@@ -386,6 +428,8 @@ def main():
         print(f"Initialized database {DB_FILE}")
     elif args.command == "import-opml":
         import_opml(args.opml_file)
+    elif args.command == "import-url":
+        import_url(args.url, args.proxy)
     elif args.command == "fetch":
         fetch_all_feeds(args.proxy, args.all)
     elif args.command == "list":

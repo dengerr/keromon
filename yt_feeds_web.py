@@ -104,42 +104,54 @@ def index():
 
     with db_connection() as conn:
         c = conn.cursor()
-        if status_filter and status_filter != "all":
-            c.execute(
-                """
-                SELECT videos.*, channels.title as channel_title
-                FROM videos
-                LEFT JOIN channels ON videos.channel_id = channels.id
-                WHERE videos.status = ?
-                ORDER BY videos.pub_date DESC
-                LIMIT 20
-            """,
-                (status_filter,),
-            )
-        else:
-            c.execute("""
-                SELECT videos.*, channels.title as channel_title
-                FROM videos
-                LEFT JOIN channels ON videos.channel_id = channels.id
-                ORDER BY videos.pub_date DESC
-                LIMIT 20
-            """)
-        videos = c.fetchall()
 
-    videos_data = []
-    for v in videos:
-        video_dict = {
-            "guid": v["guid"],
-            "title": v["title"],
-            "channel_title": v["channel_title"],
-            "link": v["link"],
-            "status": v["status"],
-            "shorts": bool(v["shorts"]),
-            "pub_date": str(v["pub_date"]),
-        }
-        video_dict["html"] = video_card_html(video_dict)
-        videos_data.append(video_dict)
+        def query_videos(shorts_val):
+            if status_filter and status_filter != "all":
+                c.execute(
+                    """
+                    SELECT videos.*, channels.title as channel_title
+                    FROM videos
+                    LEFT JOIN channels ON videos.channel_id = channels.id
+                    WHERE videos.status = ? AND videos.shorts = ?
+                    ORDER BY videos.pub_date DESC
+                    LIMIT 20
+                """,
+                    (status_filter, shorts_val),
+                )
+            else:
+                c.execute(
+                    """
+                    SELECT videos.*, channels.title as channel_title
+                    FROM videos
+                    LEFT JOIN channels ON videos.channel_id = channels.id
+                    WHERE videos.shorts = ?
+                    ORDER BY videos.pub_date DESC
+                    LIMIT 20
+                """,
+                    (shorts_val,),
+                )
+            return c.fetchall()
 
+        regular_videos_raw = query_videos(0)
+        shorts_videos_raw = query_videos(1)
+
+    def build_video_data(videos):
+        result = []
+        for v in videos:
+            video_dict = {
+                "guid": v["guid"],
+                "title": v["title"],
+                "channel_title": v["channel_title"],
+                "link": v["link"],
+                "status": v["status"],
+                "shorts": bool(v["shorts"]),
+                "pub_date": str(v["pub_date"]),
+            }
+            video_dict["html"] = video_card_html(video_dict)
+            result.append(video_dict)
+        return result
+
+    videos_data = build_video_data(regular_videos_raw + shorts_videos_raw)
     regular_videos = [v for v in videos_data if not v["shorts"]]
     shorts_videos = [v for v in videos_data if v["shorts"]]
 

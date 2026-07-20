@@ -29,6 +29,12 @@
                hx-indicator="#loading">
                 {{ ch.title }}
             </a>
+            <button class="btn-mark-viewed"
+                hx-post="/api/channel/{{ ch.id }}/mark-viewed"
+                hx-confirm="Пометить все новые видео канала «{{ ch.title }}» как прочитанные?"
+                hx-swap="none">
+                ✓
+            </button>
             <button class="btn-delete-channel"
                 hx-delete="/api/channel/{{ ch.id }}"
                 hx-confirm="Удалить канал «{{ ch.title }}» и все его видео?"

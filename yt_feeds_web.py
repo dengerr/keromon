@@ -247,6 +247,28 @@ def channel_videos(channel_id):
     return html
 
 
+@app.route("/api/channel/<int:channel_id>/mark-viewed", methods=["POST"])
+def api_channel_mark_viewed(channel_id):
+    with db_connection() as conn:
+        c = conn.cursor()
+        c.execute(
+            "SELECT link FROM videos WHERE channel_id = ? AND status = 'new'",
+            (channel_id,),
+        )
+        links = [row["link"] for row in c.fetchall()]
+        if links:
+            with open(VIEWED_FILE, "a") as f:
+                for link in links:
+                    f.write(link + "\n")
+        c.execute(
+            "UPDATE videos SET status = 'viewed'"
+            " WHERE channel_id = ? AND status = 'new'",
+            (channel_id,),
+        )
+        conn.commit()
+    return "", 200
+
+
 @app.route("/api/channel/<int:channel_id>", methods=["DELETE"])
 def api_delete_channel(channel_id):
     with db_connection() as conn:

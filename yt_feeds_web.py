@@ -42,6 +42,7 @@ else:
 
 VIEWED_FILE = config.get("viewed_file", "viewed_urls.txt")
 DB_FILE = config.get("db_file", "feeds.db")
+DELETED_FILE = "deleted.txt"
 
 
 def get_db():
@@ -244,6 +245,33 @@ def channel_videos(channel_id):
     html += "</div></div>"
 
     return html
+
+
+@app.route("/api/channel/<int:channel_id>", methods=["DELETE"])
+def api_delete_channel(channel_id):
+    with db_connection() as conn:
+        c = conn.cursor()
+
+        c.execute("SELECT * FROM channels WHERE id = ?", (channel_id,))
+        channel = c.fetchone()
+        if not channel:
+            return "Channel not found", 404
+
+        c.execute("SELECT * FROM videos WHERE channel_id = ?", (channel_id,))
+        videos = c.fetchall()
+
+        with open(DELETED_FILE, "a") as f:
+            f.write(
+                json.dumps({"type": "channel", **dict(channel)}, default=str) + "\n"
+            )
+            for v in videos:
+                f.write(json.dumps({"type": "video", **dict(v)}, default=str) + "\n")
+
+        c.execute("DELETE FROM videos WHERE channel_id = ?", (channel_id,))
+        c.execute("DELETE FROM channels WHERE id = ?", (channel_id,))
+        conn.commit()
+
+    return "", 200
 
 
 if __name__ == "__main__":

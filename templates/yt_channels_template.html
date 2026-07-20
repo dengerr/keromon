@@ -20,14 +20,23 @@
     <div class="sidebar">
         <h2>Channels</h2>
         {% for ch in channels %}
-        <a href="#"
-           class="channel-item"
-           hx-get="/api/channel/{{ ch.id }}/videos"
-           hx-target="#channel-videos"
-           hx-swap="innerHTML"
-           hx-indicator="#loading">
-            {{ ch.title }}
-        </a>
+        <div class="channel-item" id="channel-{{ ch.id }}">
+            <a href="#"
+               class="channel-link"
+               hx-get="/api/channel/{{ ch.id }}/videos"
+               hx-target="#channel-videos"
+               hx-swap="innerHTML"
+               hx-indicator="#loading">
+                {{ ch.title }}
+            </a>
+            <button class="btn-delete-channel"
+                hx-delete="/api/channel/{{ ch.id }}"
+                hx-confirm="Удалить канал «{{ ch.title }}» и все его видео?"
+                hx-target="#channel-{{ ch.id }}"
+                hx-swap="outerHTML swap:0.3s">
+                ×
+            </button>
+        </div>
         {% endfor %}
     </div>
     <div class="content" id="channel-videos">

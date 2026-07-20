@@ -184,9 +184,7 @@ def import_opml(opml_path):
 def import_url(rss_url, proxy=None):
     try:
         session = get_session(proxy)
-        resp = session.get(
-            rss_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=30
-        )
+        resp = session.get(rss_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
         resp.raise_for_status()
         title, html_url = parse_atom_channel(resp.text)
         with db_connection() as conn:
@@ -386,9 +384,7 @@ def main():
     subparsers.add_parser("init", help="Initialize database")
     import_parser = subparsers.add_parser("import-opml", help="Import OPML file")
     import_parser.add_argument("opml_file", help="Path to OPML file")
-    import_url_parser = subparsers.add_parser(
-        "import-url", help="Import RSS/Atom URL"
-    )
+    import_url_parser = subparsers.add_parser("import-url", help="Import RSS/Atom URL")
     import_url_parser.add_argument("url", help="RSS/Atom feed URL")
     import_url_parser.add_argument(
         "--proxy",

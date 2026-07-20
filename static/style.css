@@ -86,14 +86,17 @@ a:hover { text-decoration: underline; }
 .channels-layout {
     display: flex;
     gap: 20px;
+    height: calc(100vh - 120px);
 }
 .sidebar {
     width: 250px;
     flex-shrink: 0;
+    overflow-y: auto;
 }
 .content {
     flex: 1;
     min-width: 0;
+    overflow-y: auto;
 }
 .channel-item {
     display: block;

@@ -204,18 +204,20 @@ def fetch_all_feeds(proxy=None, all_channels=False):
     with db_connection() as conn:
         c = conn.cursor()
         if all_channels:
-            c.execute("SELECT id, xml_url FROM channels")
+            c.execute("SELECT id, title, xml_url FROM channels")
         else:
             c.execute("""
-                SELECT DISTINCT c.id, c.xml_url
+                SELECT DISTINCT c.id, c.title, c.xml_url
                 FROM channels c
                 INNER JOIN videos v ON c.id = v.channel_id
                 WHERE v.pub_date >= datetime('now', '-30 days')
             """)
         channels = c.fetchall()
         total_videos = 0
+        new_videos = []
         for channel in channels:
             channel_id = channel["id"]
+            channel_title = channel["title"]
             xml_url = channel["xml_url"]
             print(f"Fetching {xml_url}...")
             items = fetch_feed(xml_url, proxy)
@@ -240,9 +242,14 @@ def fetch_all_feeds(proxy=None, all_channels=False):
                     )
                     if c.rowcount:
                         total_videos += 1
+                        new_videos.append(f"{channel_title} - {item['title']}")
                 except sqlite3.Error as e:
                     print(f"Error inserting video {item['guid']}: {e}")
         conn.commit()
+    if new_videos:
+        print(f"\nNew videos ({len(new_videos)}):")
+        for v in new_videos:
+            print(f"  {v}")
     print(f"Fetched {total_videos} new videos")
 
 

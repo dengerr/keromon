@@ -240,7 +240,7 @@ def fetch_all_feeds(proxy=None, all_channels=False):
                             item.get("shorts", 0),
                         ),
                     )
-                    if c.rowcount:
+                    if c.rowcount and not item.get("shorts", 0):
                         total_videos += 1
                         new_videos.append(f"{channel_title} - {item['title']}")
                 except sqlite3.Error as e:

@@ -195,7 +195,13 @@ def api_update_status():
 def channels():
     with db_connection() as conn:
         c = conn.cursor()
-        c.execute("SELECT id, title FROM channels ORDER BY title")
+        c.execute("""
+            SELECT c.id, c.title, COUNT(v.guid) as new_count
+            FROM channels c
+            LEFT JOIN videos v ON c.id = v.channel_id AND v.status = 'new'
+            GROUP BY c.id
+            ORDER BY c.title
+        """)
         all_channels = c.fetchall()
 
     return render_template(
@@ -209,7 +215,13 @@ def channels():
 def channels_detail(channel_id):
     with db_connection() as conn:
         c = conn.cursor()
-        c.execute("SELECT id, title FROM channels ORDER BY title")
+        c.execute("""
+            SELECT c.id, c.title, COUNT(v.guid) as new_count
+            FROM channels c
+            LEFT JOIN videos v ON c.id = v.channel_id AND v.status = 'new'
+            GROUP BY c.id
+            ORDER BY c.title
+        """)
         all_channels = c.fetchall()
 
     return render_template(

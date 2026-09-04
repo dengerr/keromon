@@ -29,7 +29,7 @@
                hx-swap="innerHTML"
                hx-push-url="/channels/{{ ch.id }}"
                hx-indicator="#loading">
-                {{ ch.title }}
+                {{ ch.title }}{{ ' (%d)'|format(ch.new_count) if ch.new_count > 0 else '' }}
             </a>
             <button class="btn-mark-viewed"
                 hx-post="/api/channel/{{ ch.id }}/mark-viewed"

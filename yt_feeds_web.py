@@ -114,6 +114,7 @@ def index():
                     FROM videos
                     LEFT JOIN channels ON videos.channel_id = channels.id
                     WHERE videos.status = ? AND videos.shorts = ?
+                    AND videos.pub_date >= date('now', '-1 year')
                     ORDER BY videos.pub_date DESC
                     LIMIT 20
                 """,
@@ -126,6 +127,7 @@ def index():
                     FROM videos
                     LEFT JOIN channels ON videos.channel_id = channels.id
                     WHERE videos.shorts = ?
+                    AND videos.pub_date >= date('now', '-1 year')
                     ORDER BY videos.pub_date DESC
                     LIMIT 20
                 """,

@@ -21,11 +21,13 @@
         <h2>Channels</h2>
         {% for ch in channels %}
         <div class="channel-item" id="channel-{{ ch.id }}">
-            <a href="#"
-               class="channel-link"
+            <a href="/channels/{{ ch.id }}"
+               class="channel-link {{ 'active' if active_channel_id == ch.id else '' }}"
+               id="channel-link-{{ ch.id }}"
                hx-get="/api/channel/{{ ch.id }}/videos"
                hx-target="#channel-videos"
                hx-swap="innerHTML"
+               hx-push-url="/channels/{{ ch.id }}"
                hx-indicator="#loading">
                 {{ ch.title }}
             </a>
@@ -49,5 +51,15 @@
         <span id="loading" style="color:#999;">Select a channel on the left</span>
     </div>
 </div>
+{% if active_channel_id %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var link = document.getElementById('channel-link-{{ active_channel_id }}');
+        if (link) {
+            link.click();
+        }
+    });
+</script>
+{% endif %}
 </body>
 </html>

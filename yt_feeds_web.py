@@ -62,10 +62,11 @@ def db_connection():
 
 def video_card_html(v):
     """Generate HTML for a video card."""
+    channel_link = f'/channels/{v["channel_id"]}' if v.get("channel_id") else "#"
     return f"""
 <div class="video {v["status"]}">
     <div class="title">
-        {v["channel_title"]} <br>
+        <a href="{channel_link}">{v["channel_title"]}</a> <br>
         <a href="{v["link"]}" target="_blank">{v["title"]}</a>
     </div>
     <div class="meta">
@@ -145,6 +146,7 @@ def index():
                 "guid": v["guid"],
                 "title": v["title"],
                 "channel_title": v["channel_title"],
+                "channel_id": v["channel_id"],
                 "link": v["link"],
                 "status": v["status"],
                 "shorts": bool(v["shorts"]),
@@ -203,6 +205,20 @@ def channels():
     )
 
 
+@app.route("/channels/<int:channel_id>")
+def channels_detail(channel_id):
+    with db_connection() as conn:
+        c = conn.cursor()
+        c.execute("SELECT id, title FROM channels ORDER BY title")
+        all_channels = c.fetchall()
+
+    return render_template(
+        "yt_channels_template.html",
+        channels=all_channels,
+        active_channel_id=channel_id,
+    )
+
+
 @app.route("/api/channel/<int:channel_id>/videos")
 def channel_videos(channel_id):
     with db_connection() as conn:
@@ -225,6 +241,7 @@ def channel_videos(channel_id):
             "guid": v["guid"],
             "title": v["title"],
             "channel_title": v["channel_title"],
+            "channel_id": v["channel_id"],
             "link": v["link"],
             "status": v["status"],
             "shorts": bool(v["shorts"]),

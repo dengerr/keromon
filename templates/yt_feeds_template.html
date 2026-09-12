@@ -26,7 +26,12 @@
         Отложить</a>
     <a href="/channels">Channels</a>
 </div>
-<div class="container">
+<div class="container"
+     hx-get="/"
+     hx-trigger="every 300s"
+     hx-select=".container"
+     hx-swap="outerHTML"
+     hx-vals='{"status": "{{ status_filter }}"}'>
     <div class="column">
         <h2>Videos</h2>
         {% for v in regular_videos %}

@@ -46,6 +46,12 @@ update_cubic_cookies:
 copy_cubic_karak_habr:
 	scp cubic:/var/www/html/buryi.ru/habr_weekly.xml karak:/var/www/mirror.buryi.ru/
 
+sass:
+	sass static/scss/style.scss static/style.css
+
+sass-watch:
+	sass --watch static/scss/style.scss:static/style.css
+
 lint:
 	uv run ruff check .
 

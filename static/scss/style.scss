@@ -1,0 +1,239 @@
+$bg: #1a1a1a;
+$box-bg: #2a2a2a;
+$box-bg-hover: #333;
+$border: #444;
+$border-hover: #666;
+$text: #e0e0e0;
+$muted: #999;
+$muted-heading: #aaa;
+$link: #64B5F6;
+$accent: #2196F3;
+$accent-bg: #1a3a5a;
+
+$statuses: (
+    "new": #4CAF50,
+    "not_interested": #f44336,
+    "viewed": #2196F3,
+    "todo": #FF9800,
+);
+
+body {
+    font-family: monospace;
+    margin: 0 auto;
+    background: $bg;
+    color: $text;
+    max-width: 1180px;
+}
+
+.video {
+    border: 1px solid $border;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    background: $box-bg;
+
+    @each $status, $color in $statuses {
+        &.#{$status} {
+            border-left: 4px solid $color;
+        }
+    }
+
+    .title {
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .meta {
+        font-size: 12px;
+        color: $muted;
+        margin-bottom: 10px;
+
+        .status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-left: 10px;
+
+            @each $status, $color in $statuses {
+                &.#{$status} {
+                    background: $color;
+                    color: white;
+                }
+            }
+        }
+    }
+
+    .buttons {
+        margin-top: 10px;
+    }
+}
+
+button {
+    padding: 8px 16px;
+    margin-right: 10px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+
+    &:hover {
+        opacity: 0.8;
+    }
+}
+
+.btn-not-interested {
+    background: map-get($statuses, "not_interested");
+    color: white;
+}
+
+.btn-viewed {
+    background: map-get($statuses, "viewed");
+    color: white;
+}
+
+.btn-todo {
+    background: map-get($statuses, "todo");
+    color: white;
+}
+
+a {
+    color: $link;
+    text-decoration: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.filters {
+    margin-bottom: 20px;
+    font-size: 14px;
+
+    a {
+        margin-right: 10px;
+        padding: 5px 10px;
+        border-radius: 3px;
+
+        &.active {
+            background: $accent;
+            color: white;
+            font-weight: bold;
+        }
+    }
+}
+
+.container {
+    display: flex;
+    gap: 20px;
+}
+
+.column {
+    flex: 1;
+
+    h2 {
+        font-size: 18px;
+        margin-bottom: 15px;
+        color: $muted-heading;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+}
+
+.channels-layout {
+    display: flex;
+    gap: 20px;
+    height: calc(100vh - 120px);
+}
+
+.sidebar {
+    width: 250px;
+    flex-shrink: 0;
+    overflow-y: auto;
+
+    h2 {
+        font-size: 18px;
+        margin-bottom: 15px;
+        color: $muted-heading;
+    }
+}
+
+.content {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+}
+
+.channel-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 5px;
+    background: $box-bg;
+    border: 1px solid $border;
+    border-radius: 3px;
+    color: $text;
+    font-size: 14px;
+    word-break: break-all;
+
+    &:hover {
+        background: $box-bg-hover;
+        border-color: $border-hover;
+    }
+
+    &.active {
+        border-color: $accent;
+        background: $accent-bg;
+    }
+
+    .channel-link {
+        flex: 1;
+        color: $text;
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.btn-delete-channel {
+    background: none;
+    border: none;
+    color: map-get($statuses, "not_interested");
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 5px;
+    margin-left: 8px;
+    line-height: 1;
+    flex-shrink: 0;
+
+    &:hover {
+        color: #ff6659;
+        background: none;
+        opacity: 1;
+    }
+}
+
+.btn-mark-viewed {
+    background: none;
+    border: none;
+    color: map-get($statuses, "new");
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 5px;
+    margin-left: 4px;
+    line-height: 1;
+    flex-shrink: 0;
+
+    &:hover {
+        color: #66bb6a;
+        background: none;
+        opacity: 1;
+    }
+}

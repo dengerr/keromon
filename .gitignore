@@ -10,3 +10,4 @@ yt_cookies.txt
 *.opml
 *.db
 viewed_urls.txt
+static/style.css.map

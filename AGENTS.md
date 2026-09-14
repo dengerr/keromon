@@ -1,17 +1,28 @@
 # AGENTS.md
 
-- Python 3.12, flat script repo (no src package)
-- Lint: `uv run ruff check .`, Format: `uv run ruff format .`, Test: `uv run pytest -v`
-- `scrap.py`: Email top Habr articles. Needs `email.ini` (copy from `email-example.ini`). Args: `daily`, `weekly`, `print`
-- `yt_rss.py`: Generate YouTube subscriptions RSS. Requires `subscriptions` file (see Makefile)
-- `yt_feeds.py`: YouTube OPML feed manager with SQLite. Import OPML, fetch with proxy, track video status (new, not_interested, viewed, todo). Default proxy: `http://127.0.0.1:8881`
-  - Commands: `init`, `import-opml <file>`, `fetch [--proxy]`, `list [--status] [--limit]`, `update-status --guid --status`, `stats`
-  - Config: `yt_feeds_config.json` (viewed_file, db_file, proxy)
-- `yt_feeds_web.py`: Web interface for yt_feeds.py. Run: `uv run python yt_feeds_web.py`, opens at http://localhost:5000
-  - Buttons: не смотреть (not_interested), посмотреть (viewed, saves URL to file), отложить (todo)
-- `habr_rss.py`: Generate weekly Habr RSS
-- YouTube workflow: extract cookies → download subscriptions → generate RSS
-  - Extract: `./extract_cookies.sh ~/.mozilla/firefox/*default*/cookies.sqlite | grep youtube.com > yt_cookies.txt`
-  - Download: `make subscriptions` (uses `wget --load-cookies`)
-  - RSS: `make yt` or `python3 yt_rss.py`
-- Makefile has deployment targets for remote servers (killdozer, karak, cubic)
+- Python 3.12 flat script repo (no src package), deps via uv. Lint: `uv run ruff check .`, Format: `uv run ruff format .`, Test: `uv run pytest -v` (unit tests only; no network/DB in tests).
+
+## Habr email / RSS pipeline (ETL)
+- `scrap.py daily|weekly|print`: scrape (`extract.py`) → processor (`habr_processor.py`) → format (`transform.py`) → email (`load.py`). Needs `email.ini` (copy from `email-example.ini`); `load.py` exits if absent.
+- `habr_rss.py > habr_weekly.xml`: weekly RSS grouped 20/cast via `rss.GroupedRssPrint` (make target `habr_weekly.xml`). `rss.py` is the shared RSS 2.0 printer.
+
+## YouTube feeds (`yt_feeds.py` + web UI)
+- `yt_feeds.py`: OPML manager over SQLite `feeds.db`. Commands: `init`, `import-opml <file>`, `import-url <url>`, `fetch [--proxy] [--all]`, `list [--status] [--limit]`, `update-status --guid --status`, `stats`, `channel-stats`, `mark-viewed` (URLs from stdin → guid `yt:video:<id>`). Default proxy `http://127.0.0.1:8881`; without `--all` it fetches only channels with videos in last 30 days. Statuses: `new`, `not_interested`, `viewed`, `todo`. Shorts are stored but excluded from the new-video count.
+- `yt_feeds_web.py`: Flask web UI at http://localhost:5000, htmx-driven buttons (не смотреть / посмотреть / отложить). "посмотреть" appends video URL to `viewed_file` from `yt_feeds_config.json` (default `~/Nextcloud/yt.txt`); deleting a channel dumps JSONL to `deleted.txt`.
+- `yt_info.py`: print channel + video title for each URL in `~/Nextcloud/yt.txt` by looking up `feeds.db`.
+- `yt_rss.py`: needs `subscriptions` file (raw YouTube subscriptions page HTML). Outputs RSS to stdout (`make yt` writes `yt.xml`).
+
+## YouTube subscriptions workflow
+- Extract cookies → download → make RSS:
+  - `./extract_cookies.sh ~/.mozilla/firefox/*default*/cookies.sqlite | grep youtube.com > yt_cookies.txt`
+  - `make subscriptions` (uses `wget --load-cookies`)
+  - `make yt` or `python3 yt_rss.py`
+- Makefile `update_killdozer_cookies` / `update_karak_cookies` / `update_cubic_cookies` deploy cookies to remote servers (scp + ssh) and regenerate remote `yt.xml`.
+
+## Web app styling
+- `static/scss/style.scss` compiles to committed `static/style.css` via dart-sass CLI (`make sass`, `make sass-watch`). sass is NOT a Python dep; templates point at `/static/style.css`, so remote servers never compile it.
+
+## Misc
+- `readability_md.py`: HTML article → Markdown via the vendored local module `markdownify.py` (markdownify 0.10.3 snapshot, imported as `markdownify`; tests exercise it directly alongside the vendored `six` dep).
+- `snmi_rss.py`: generate RSS for снми.рф.
+- Git-ignored runtime files (don't commit): `email.ini`, `subscriptions`, `yt_cookies.txt`, `*.xml`, `feeds.db`, `viewed_urls.txt`.

@@ -219,7 +219,7 @@ def fetch_all_feeds(proxy=None, all_channels=False):
             channel_id = channel["id"]
             channel_title = channel["title"]
             xml_url = channel["xml_url"]
-            print(f"Fetching {xml_url}...")
+            print(f"Fetch {xml_url}")
             items = fetch_feed(xml_url, proxy)
             for item in items:
                 try:

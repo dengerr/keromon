@@ -1,6 +1,9 @@
 from datetime import datetime
 
-from yt_feeds import parse_atom_feed
+import pytest
+import requests
+
+from yt_feeds import ensure_proxy_support, get_session, parse_atom_feed
 
 
 def test_parse_atom_feed_basic():
@@ -43,3 +46,45 @@ def test_parse_atom_feed_empty():
 </feed>"""
     items = parse_atom_feed(atom_xml)
     assert len(items) == 0
+
+
+def test_get_session_http_proxy():
+    session = get_session("http://127.0.0.1:8881")
+    assert session.proxies == {
+        "http": "http://127.0.0.1:8881",
+        "https": "http://127.0.0.1:8881",
+    }
+
+
+def test_get_session_socks5_proxy():
+    proxy = "socks5://127.0.0.1:1080"
+    session = get_session(proxy)
+    assert session.proxies == {"http": proxy, "https": proxy}
+
+
+def test_get_session_socks5h_proxy():
+    proxy = "socks5h://user:pass@127.0.0.1:1080"
+    session = get_session(proxy)
+    assert session.proxies == {"http": proxy, "https": proxy}
+
+
+def test_get_session_without_proxy():
+    assert get_session().proxies == {}
+
+
+def test_ensure_proxy_support_ignores_http(monkeypatch):
+    monkeypatch.setattr("yt_feeds.importlib.util.find_spec", lambda name: None)
+    ensure_proxy_support("http://127.0.0.1:8881")
+    ensure_proxy_support("https://127.0.0.1:8881")
+
+
+def test_ensure_proxy_support_missing_pysocks(monkeypatch):
+    monkeypatch.setattr("yt_feeds.importlib.util.find_spec", lambda name: None)
+    with pytest.raises(requests.exceptions.InvalidSchema, match="PySocks"):
+        ensure_proxy_support("socks5://127.0.0.1:1080")
+
+
+def test_get_session_socks_proxy_without_pysocks(monkeypatch):
+    monkeypatch.setattr("yt_feeds.importlib.util.find_spec", lambda name: None)
+    with pytest.raises(requests.exceptions.InvalidSchema, match="PySocks"):
+        get_session("socks5://127.0.0.1:1080")

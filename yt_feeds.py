@@ -1,5 +1,6 @@
 import argparse
 import html
+import importlib.util
 import sqlite3
 import sys
 import xml.etree.ElementTree as ET
@@ -132,6 +133,17 @@ def parse_atom_channel(content):
     return title, html_url
 
 
+def ensure_proxy_support(proxy):
+    scheme = urlparse(proxy).scheme
+    if not scheme.startswith("socks"):
+        return
+    if importlib.util.find_spec("socks") is None:
+        raise requests.exceptions.InvalidSchema(
+            f"SOCKS proxy {proxy} requires PySocks: run `uv sync` "
+            "or `pip install 'requests[socks]'`"
+        )
+
+
 def get_session(proxy=None):
     session = requests.Session()
     retries = Retry(
@@ -140,6 +152,7 @@ def get_session(proxy=None):
     session.mount("http://", HTTPAdapter(max_retries=retries))
     session.mount("https://", HTTPAdapter(max_retries=retries))
     if proxy:
+        ensure_proxy_support(proxy)
         session.proxies = {"http": proxy, "https": proxy}
     return session
 
@@ -396,13 +409,13 @@ def main():
     import_url_parser.add_argument(
         "--proxy",
         default=None,
-        help="HTTP proxy (default: no proxy)",
+        help="HTTP or SOCKS5 proxy, e.g. socks5://127.0.0.1:1080 (default: no proxy)",
     )
     fetch_parser = subparsers.add_parser("fetch", help="Fetch feeds from channels")
     fetch_parser.add_argument(
         "--proxy",
         default="http://127.0.0.1:8881",
-        help="HTTP proxy (default: http://127.0.0.1:8881)",
+        help="HTTP or SOCKS5 proxy (default: http://127.0.0.1:8881)",
     )
     fetch_parser.add_argument(
         "--all",

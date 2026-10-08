@@ -67,7 +67,9 @@ def video_card_html(v):
 <div class="video {v["status"]}">
     <div class="title">
         <a href="{channel_link}">{v["channel_title"]}</a> <br>
-        <a href="{v["link"]}" target="_blank">{v["title"]}</a>
+        <div class="link-wrapper">
+            <a href="{v["link"]}" target="_blank">{v["title"]}</a>
+        </div>
     </div>
     <div class="meta">
         Published: {v["pub_date"]}
